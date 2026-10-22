@@ -5975,7 +5975,7 @@ impl Studio {
             if s_end >= clip_end - 0.08 && s_start > clip.start + 0.15 {
                 commands.push(Command::TrimClip {
                     clip_id: clip.id.clone(),
-                    edge: model::TrimEdge::End,
+                    edge: TrimEdge::End,
                     delta: -(clip_end - s_start),
                     ripple: true,
                 });
@@ -5983,7 +5983,7 @@ impl Studio {
             } else if s_start <= clip.start + 0.08 && s_end < clip_end - 0.15 {
                 commands.push(Command::TrimClip {
                     clip_id: clip.id.clone(),
-                    edge: model::TrimEdge::Start,
+                    edge: TrimEdge::Start,
                     delta: s_end - clip.start,
                     ripple: true,
                 });
@@ -5995,7 +5995,7 @@ impl Studio {
                 });
                 commands.push(Command::TrimClip {
                     clip_id: clip.id.clone(),
-                    edge: model::TrimEdge::End,
+                    edge: TrimEdge::End,
                     delta: -cut_len,
                     ripple: true,
                 });
