@@ -979,6 +979,24 @@ textarea {
   transition: all 0.2s ease;
 }
 
+.copilot-select {
+  width: 100%;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 0.82rem;
+  font-family: inherit;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+
+.copilot-select:focus {
+  border-color: var(--cyan);
+}
+
 .btn-transcribe-ai:hover {
   background: linear-gradient(135deg, rgba(0, 240, 255, 0.4), rgba(124, 92, 255, 0.5));
   box-shadow: 0 0 14px rgba(0, 240, 255, 0.35);

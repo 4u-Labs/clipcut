@@ -11,7 +11,7 @@
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" type="image/svg+xml" href="icon.svg" />
   <link rel="apple-touch-icon" href="icon.svg" />
-  <link rel="stylesheet" href="styles.css?v=2.3" />
+  <link rel="stylesheet" href="styles.css?v=2.4" />
 </head>
 <body>
 
@@ -496,6 +496,17 @@
             </label>
           </div>
 
+          <div class="field-group" style="margin-top: 10px;">
+            <label data-pt="Opção do Áudio / Legenda:" data-en="Audio / Subtitle Option:">Opção do Áudio / Legenda:</label>
+            <select id="sel-transcribe-lang" class="copilot-select">
+              <option value="en_to_pt" data-pt="🇺🇸 Áudio em Inglês → Legenda em Português 🇧🇷 (Traduzir)" data-en="🇺🇸 English Audio → Portuguese Subtitles 🇧🇷 (Translate)">🇺🇸 Áudio em Inglês → Legenda em Português 🇧🇷 (Traduzir)</option>
+              <option value="english" data-pt="🇺🇸 Áudio em Inglês → Legenda em Inglês (EN)" data-en="🇺🇸 English Audio → English Subtitles (EN)">🇺🇸 Áudio em Inglês → Legenda em Inglês (EN)</option>
+              <option value="portuguese" data-pt="🇧🇷 Áudio em Português → Legenda em Português (PT)" data-en="🇧🇷 Portuguese Audio → Portuguese Subtitles (PT)">🇧🇷 Áudio em Português → Legenda em Português (PT)</option>
+              <option value="auto" data-pt="🌐 Detectar Idioma Automaticamente" data-en="🌐 Auto-Detect Language">🌐 Detectar Idioma Automaticamente</option>
+              <option value="spanish" data-pt="🇪🇸 Áudio em Espanhol → Legenda em Espanhol (ES)" data-en="🇪🇸 Spanish Audio → Spanish Subtitles (ES)">🇪🇸 Áudio em Espanhol → Legenda em Espanhol (ES)</option>
+            </select>
+          </div>
+
           <div class="transcribe-actions-row">
             <button id="btn-transcribe-video" type="button" class="btn-transcribe-ai">
               🎙️ <span data-pt="Transcrever Vídeo com IA (Whisper)" data-en="Transcribe Video with AI (Whisper)">Transcrever Vídeo com IA (Whisper)</span>
@@ -725,6 +736,6 @@
   </aside>
 
   <div id="toast" class="toast hidden"></div>
-  <script src="app.js?v=2.3"></script>
+  <script src="app.js?v=2.4"></script>
 </body>
 </html>

@@ -587,20 +587,59 @@ if (btnTranscribe) {
         });
       }
 
-      setTranscribeProgress(75, 'Transcrevendo voz em Português com Whisper...');
-      const result = await whisperPipelineInstance(audioData, {
-        language: 'portuguese',
+      const selTranscribeLang = document.getElementById('sel-transcribe-lang');
+      const mode = selTranscribeLang ? selTranscribeLang.value : 'en_to_pt';
+      let whisperLang = 'portuguese';
+      let translateToPt = false;
+
+      if (mode === 'en_to_pt') {
+        whisperLang = 'english';
+        translateToPt = true;
+      } else if (mode === 'english') {
+        whisperLang = 'english';
+      } else if (mode === 'portuguese') {
+        whisperLang = 'portuguese';
+      } else if (mode === 'spanish') {
+        whisperLang = 'spanish';
+      } else if (mode === 'auto') {
+        whisperLang = null;
+      }
+
+      setTranscribeProgress(70, `Transcrevendo áudio com Whisper (${mode === 'en_to_pt' ? 'Inglês' : whisperLang || 'Auto'})...`);
+      const whisperOpts = {
         task: 'transcribe',
         chunk_length_s: 30,
         stride_length_s: 5
-      });
+      };
+      if (whisperLang) {
+        whisperOpts.language = whisperLang;
+      }
 
-      const text = (result && result.text) ? result.text.trim() : '';
+      const result = await whisperPipelineInstance(audioData, whisperOpts);
+
+      let text = (result && result.text) ? result.text.trim() : '';
+
+      if (text && translateToPt) {
+        setTranscribeProgress(88, 'Traduzindo do Inglês para Português (Brasil)...');
+        try {
+          const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=pt&dt=t&q=${encodeURIComponent(text)}`);
+          const json = await res.json();
+          if (json && json[0]) {
+            const translated = json[0].map(item => item[0]).join('');
+            if (translated && translated.trim()) {
+              text = translated.trim();
+            }
+          }
+        } catch (transErr) {
+          console.warn('Translate error:', transErr);
+        }
+      }
+
       if (text) {
         setTranscribeProgress(100, 'Transcrição concluída!');
         scriptInput.value = text;
         buildCaptionsFromText(text);
-        showToast('✨ Áudio transcrito com sucesso via Whisper IA!');
+        showToast(translateToPt ? '✨ Áudio em Inglês transcrito e traduzido para Português!' : '✨ Áudio transcrito com sucesso via Whisper IA!');
         updateCopilotDiagnostics();
       } else {
         showToast('Nenhuma fala detectada com clareza no áudio.');
@@ -632,8 +671,10 @@ if (btnDictate) {
         return;
       }
       try {
+        const selTranscribeLang = document.getElementById('sel-transcribe-lang');
+        const mode = selTranscribeLang ? selTranscribeLang.value : 'portuguese';
         speechRecognitionInstance = new SpeechRec();
-        speechRecognitionInstance.lang = 'pt-BR';
+        speechRecognitionInstance.lang = (mode === 'english' || mode === 'en_to_pt') ? 'en-US' : (mode === 'spanish' ? 'es-ES' : 'pt-BR');
         speechRecognitionInstance.continuous = true;
         speechRecognitionInstance.interimResults = true;
 
@@ -662,9 +703,29 @@ if (btnDictate) {
           btnDictate.classList.remove('recording');
         };
 
-        speechRecognitionInstance.onend = () => {
+        speechRecognitionInstance.onend = async () => {
           isDictating = false;
           btnDictate.classList.remove('recording');
+          const currentText = scriptInput.value.trim();
+          if (mode === 'en_to_pt' && currentText) {
+            showToast('Traduzindo ditado para Português...');
+            try {
+              const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=pt&dt=t&q=${encodeURIComponent(currentText)}`);
+              const json = await res.json();
+              if (json && json[0]) {
+                const translated = json[0].map(item => item[0]).join('');
+                if (translated && translated.trim()) {
+                  scriptInput.value = translated.trim();
+                  buildCaptionsFromText(translated.trim());
+                  updateCopilotDiagnostics();
+                  showToast('✨ Ditado traduzido para Português!');
+                  return;
+                }
+              }
+            } catch (err) {
+              console.warn('Translate dictation error:', err);
+            }
+          }
           showToast('Ditado finalizado e sincronizado no Karaokê!');
         };
 
