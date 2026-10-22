@@ -1320,8 +1320,20 @@ textarea {
 
 .video-segment-pill.active {
   border-color: var(--yellow);
-  box-shadow: 0 0 8px rgba(255, 222, 0, 0.4);
-  background: rgba(255, 222, 0, 0.18);
+  box-shadow: 0 0 12px rgba(255, 222, 0, 0.55);
+  background: rgba(255, 222, 0, 0.22);
+}
+
+.seg-tag-active {
+  background: var(--yellow);
+  color: #0b111e;
+  font-size: 0.62rem;
+  font-weight: 900;
+  padding: 1px 5px;
+  border-radius: 4px;
+  margin-left: 6px;
+  letter-spacing: 0.4px;
+  display: inline-block;
 }
 
 .video-segment-del {

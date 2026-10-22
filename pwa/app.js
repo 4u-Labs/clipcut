@@ -257,11 +257,12 @@ function renderVideoTrackLane() {
   let activeDur = 0;
   state.videoSegments.forEach((seg, idx) => {
     activeDur += Math.max(0, seg.end - seg.start);
+    const isSelected = seg.id === state.selectedSegmentId;
     const pill = document.createElement('div');
-    pill.className = `video-segment-pill ${seg.id === state.selectedSegmentId ? 'active' : ''}`;
+    pill.className = `video-segment-pill ${isSelected ? 'active' : ''}`;
     pill.style.flex = `${Math.max(0.1, seg.end - seg.start)}`;
     pill.title = `Trecho ${idx + 1}: ${seg.start.toFixed(2)}s - ${seg.end.toFixed(2)}s (Clique para selecionar)`;
-    pill.innerHTML = `<span>🎬 Trecho ${idx + 1} (${seg.start.toFixed(1)}s - ${seg.end.toFixed(1)}s)</span>`;
+    pill.innerHTML = `<span>${isSelected ? '🎯' : '🎬'} Trecho ${idx + 1} (${seg.start.toFixed(1)}s - ${seg.end.toFixed(1)}s) ${isSelected ? '<span class="seg-tag-active">SELECIONADO</span>' : ''}</span>`;
 
     if (numSegs > 1) {
       const delBtn = document.createElement('button');
@@ -279,6 +280,7 @@ function renderVideoTrackLane() {
       state.selectedSegmentId = seg.id;
       seekTo(seg.start);
       renderVideoTrackLane();
+      showToast(`🎯 Trecho ${idx + 1} selecionado (${seg.start.toFixed(1)}s - ${seg.end.toFixed(1)}s). Clique em "🗑️ Excluir Trecho" ou aperte Delete para remover.`);
     });
 
     videoLane.appendChild(pill);
@@ -287,6 +289,16 @@ function renderVideoTrackLane() {
   if (cutsSummary) {
     const pctActive = Math.min(100, Math.round((activeDur / totalDur) * 100));
     cutsSummary.textContent = `${numSegs} trecho${numSegs > 1 ? 's' : ''} (${activeDur.toFixed(1)}s / ${pctActive}% ativo)`;
+  }
+}
+
+function updateActiveSegmentOnPlayhead() {
+  if (!state.videoSegments || state.videoSegments.length === 0) return;
+  const cur = state.currentTime;
+  const currentSeg = state.videoSegments.find(s => cur >= s.start && cur <= s.end);
+  if (currentSeg && currentSeg.id !== state.selectedSegmentId) {
+    state.selectedSegmentId = currentSeg.id;
+    renderVideoTrackLane();
   }
 }
 
@@ -510,6 +522,7 @@ function seekTo(t) {
   }
   scrubber.value = state.currentTime;
   updateTimecode();
+  updateActiveSegmentOnPlayhead();
   renderFrame();
 }
 
