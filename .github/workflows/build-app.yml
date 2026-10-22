@@ -747,8 +747,8 @@ jobs:
           cat > "stage/$name/concat.desktop" <<DESKTOP
           [Desktop Entry]
           Type=Application
-          Name=Concat
-          Comment=Video editor
+          Name=ClipCut Studio
+          Comment=ClipCut Studio — Video Editor & AI Karaoke Captions (4u-Labs)
           Exec=concat
           Icon=concat
           Categories=AudioVideo;Video;
