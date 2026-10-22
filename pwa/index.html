@@ -447,6 +447,7 @@
         <button id="btn-aspect-9-16" class="tool-pill" title="9:16 (1080x1920)">📱 9:16 Vertical</button>
         <button id="btn-cut-silences" class="tool-pill" title="Auto Silence Cutter">✂️ <span data-pt="Cortar Silêncios" data-en="Cut Silences">Cortar Silêncios</span></button>
         <button id="btn-punch-zoom" class="tool-pill" title="Punch-In Zoom">🎯 <span data-pt="Zoom Dinâmico" data-en="Punch-In Zoom">Zoom Dinâmico</span></button>
+        <button id="btn-open-copilot" class="tool-pill tool-pill-accent" title="Copiloto IA Local">✨ <span data-pt="Copiloto IA" data-en="AI Copilot">Copiloto IA</span></button>
       </div>
       <div class="topbar-right">
         <button id="btn-open-4ulabs-studio" class="tool-pill" type="button">🌐 4u-Labs</button>
@@ -626,7 +627,84 @@
     </div>
   </div>
 
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       5. COPILOTO IA CLIPCUT (DIAGNÓSTICO EM TEMPO REAL & AJUDA LOCAL)
+       ═══════════════════════════════════════════════════════════════════════ -->
+  <aside id="copilot-drawer" class="copilot-drawer hidden">
+    <div class="copilot-header">
+      <div class="copilot-title-box">
+        <span class="copilot-badge">IA 100% LOCAL</span>
+        <h3>✨ Copiloto ClipCut</h3>
+        <p data-pt="Diagnóstico em tempo real &amp; copiloto de edição inteligente"
+           data-en="Real-time timeline diagnosis &amp; smart editing copilot">
+          Diagnóstico em tempo real &amp; copiloto de edição inteligente
+        </p>
+      </div>
+      <button id="btn-close-copilot" class="modal-close" type="button" aria-label="Fechar Copiloto">✕</button>
+    </div>
+
+    <!-- Diagnóstico do Projeto em Tempo Real -->
+    <div class="copilot-diagnosis-box">
+      <div class="diagnosis-header">
+        <span class="pulse-indicator"></span>
+        <strong data-pt="Diagnóstico da sua Timeline:" data-en="Your Timeline Diagnosis:">Diagnóstico da sua Timeline:</strong>
+      </div>
+      <div id="copilot-metrics" class="copilot-metrics-grid">
+        <div class="metric-item">
+          <small data-pt="Mídia" data-en="Media">Mídia</small>
+          <strong id="diag-media">Exemplo</strong>
+        </div>
+        <div class="metric-item">
+          <small data-pt="Legendas" data-en="Captions">Legendas</small>
+          <strong id="diag-captions">2 Frases</strong>
+        </div>
+        <div class="metric-item">
+          <small data-pt="Estilo" data-en="Style">Estilo</small>
+          <strong id="diag-style">Hormozi</strong>
+        </div>
+        <div class="metric-item">
+          <small data-pt="Formato" data-en="Aspect">Formato</small>
+          <strong id="diag-aspect">16:9</strong>
+        </div>
+      </div>
+      <div id="copilot-proactive-tip" class="copilot-tip-banner">
+        💡 <em>Dica do Copiloto:</em> Notei que suas legendas estão ativas! Clique em qualquer sugestão abaixo para aplicar o efeito imediatamente.
+      </div>
+    </div>
+
+    <!-- Sugestões de Perguntas Rápidas (Chips de 1 clique) -->
+    <div class="copilot-chips-section">
+      <span class="chips-label" data-pt="Dúvidas comuns (clique para ação direta):" data-en="Common questions (click for direct action):">Dúvidas comuns (clique para ação direta):</span>
+      <div class="copilot-chips-grid">
+        <button type="button" class="copilot-chip" data-query="como_fazer_karaoke">🎤 Como fazer Karaokê?</button>
+        <button type="button" class="copilot-chip" data-query="cortar_silencios">✂️ Cortar silêncios?</button>
+        <button type="button" class="copilot-chip" data-query="formato_916">📱 Mudar para 9:16?</button>
+        <button type="button" class="copilot-chip" data-query="zoom_dinamico">🎯 Zoom Dinâmico?</button>
+        <button type="button" class="copilot-chip" data-query="animacao_pop">✨ Animação Pop?</button>
+        <button type="button" class="copilot-chip" data-query="presets_capcut">🎨 Presets CapCut?</button>
+        <button type="button" class="copilot-chip" data-query="exportar_video">🎬 Como exportar?</button>
+        <button type="button" class="copilot-chip" data-query="importar_srt">📄 Importar .SRT?</button>
+      </div>
+    </div>
+
+    <!-- Área de Mensagens / Chat -->
+    <div id="copilot-chat-feed" class="copilot-chat-feed">
+      <div class="chat-msg msg-ai">
+        <div class="msg-author">✨ Copiloto ClipCut</div>
+        <div class="msg-content">
+          Olá! Sou seu copiloto local no ClipCut. Analiso seu vídeo em tempo real e ajudo você a aplicar legendas animadas, cortes e efeitos em 1 clique. Como posso te ajudar agora?
+        </div>
+      </div>
+    </div>
+
+    <!-- Barra de Pergunta Livre -->
+    <div class="copilot-input-bar">
+      <input id="inp-copilot-query" type="text" placeholder="Pergunte qualquer dúvida (ex: como animar legendas?)..." />
+      <button id="btn-copilot-submit" type="button">Perguntar</button>
+    </div>
+  </aside>
+
   <div id="toast" class="toast hidden"></div>
-  <script src="app.js?v=2.0"></script>
+  <script src="app.js?v=2.1"></script>
 </body>
 </html>

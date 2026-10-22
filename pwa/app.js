@@ -596,5 +596,212 @@ if (modal4uLabs) {
   });
 }
 
+// ── 8. COPILOTO IA CLIPCUT (DIAGNÓSTICO EM TEMPO REAL & AJUDA LOCAL) ────────
+const btnOpenCopilot = document.getElementById('btn-open-copilot');
+const btnCloseCopilot = document.getElementById('btn-close-copilot');
+const copilotDrawer = document.getElementById('copilot-drawer');
+const diagMedia = document.getElementById('diag-media');
+const diagCaptions = document.getElementById('diag-captions');
+const diagStyle = document.getElementById('diag-style');
+const diagAspect = document.getElementById('diag-aspect');
+const copilotTip = document.getElementById('copilot-proactive-tip');
+const copilotFeed = document.getElementById('copilot-chat-feed');
+const inpCopilotQuery = document.getElementById('inp-copilot-query');
+const btnCopilotSubmit = document.getElementById('btn-copilot-submit');
+
+function updateCopilotDiagnostics() {
+  if (!copilotDrawer || copilotDrawer.classList.contains('hidden')) return;
+  if (diagMedia) diagMedia.textContent = state.hasVideo ? 'Vídeo Pronto' : 'Exemplo';
+  if (diagCaptions) diagCaptions.textContent = `${state.captions.length} Frases`;
+  if (diagStyle) diagStyle.textContent = (state.preset || 'Hormozi').toUpperCase();
+  const is916 = canvas.height > canvas.width;
+  if (diagAspect) diagAspect.textContent = is916 ? '9:16' : '16:9';
+
+  if (copilotTip) {
+    if (!is916) {
+      copilotTip.innerHTML = '💡 <em>Dica do Copiloto:</em> Seu vídeo está em 16:9. Se for postar no Reels ou TikTok, converta para <strong>Formato 9:16</strong> com 1 clique abaixo.';
+    } else if (state.anim !== 'pop') {
+      copilotTip.innerHTML = '💡 <em>Dica do Copiloto:</em> Suas legendas estão sem efeito de entrada. Ative o <strong>Pop Elástico</strong> para prender a atenção da audiência!';
+    } else {
+      copilotTip.innerHTML = `💡 <em>Dica do Copiloto:</em> Projeto otimizado! ${state.captions.length} frases sincronizadas com estilo <strong>${(state.preset || 'Hormozi').toUpperCase()}</strong> e Karaokê ativo.`;
+    }
+  }
+}
+
+function openCopilot() {
+  if (copilotDrawer) {
+    copilotDrawer.classList.remove('hidden');
+    updateCopilotDiagnostics();
+  }
+}
+
+function closeCopilot() {
+  if (copilotDrawer) {
+    copilotDrawer.classList.add('hidden');
+  }
+}
+
+if (btnOpenCopilot) btnOpenCopilot.addEventListener('click', openCopilot);
+if (btnCloseCopilot) btnCloseCopilot.addEventListener('click', closeCopilot);
+
+const COPILOT_KB = {
+  como_fazer_karaoke: {
+    answer: "No ClipCut, a legenda Karaokê mantém a frase fixa em branco e destaca apenas a palavra falada no milissegundo exato da voz em amarelo vibrante (#FFDE00) ou verde neon (#00FF88).",
+    btnText: "✨ Aplicar Estilo Hormozi Karaokê",
+    action: () => {
+      const btnHormozi = document.querySelector('.preset-btn[data-preset="hormozi"]');
+      if (btnHormozi) btnHormozi.click();
+      const btnPop = document.querySelector('#anim-selector button[data-anim="pop"]');
+      if (btnPop) btnPop.click();
+      showToast('Estilo Hormozi Karaokê aplicado!');
+    }
+  },
+  cortar_silencios: {
+    answer: "O Auto Silence Cutter analisa o áudio em 1.000 amostras por segundo, detecta pausas abaixo de -32 dB com mais de 0,40s de duração, preserva 60ms de respiração e fecha os espaços com Ripple Delete magnético.",
+    btnText: "✂️ Executar Corte de Silêncios Agora",
+    action: () => {
+      document.getElementById('btn-cut-silences').click();
+    }
+  },
+  formato_916: {
+    answer: "Converte o projeto instantaneamente para 1080×1920 (proporção vertical 9:16), ideal para Reels do Instagram, TikTok e YouTube Shorts com enquadramento inteligente Fill.",
+    btnText: "📱 Mudar para 9:16 Vertical",
+    action: () => {
+      document.getElementById('btn-aspect-9-16').click();
+      updateCopilotDiagnostics();
+    }
+  },
+  zoom_dinamico: {
+    answer: "O Zoom Dinâmico cria keyframes automáticos alternando suavemente a escala do vídeo entre 100% e 114%, quebrando a monotonia e aumentando a retenção do público.",
+    btnText: "🎯 Alternar Zoom Dinâmico",
+    action: () => {
+      document.getElementById('btn-punch-zoom').click();
+      updateCopilotDiagnostics();
+    }
+  },
+  animacao_pop: {
+    answer: "Aplica física de mola elástica (76% → 108% → 100%) na entrada de cada nova frase de legenda sem fazer o texto pular durante a troca das palavras do Karaokê.",
+    btnText: "✨ Ativar Pop Elástico",
+    action: () => {
+      const btn = document.querySelector('#anim-selector button[data-anim="pop"]');
+      if (btn) btn.click();
+      showToast('✨ Animação Pop Elástico ativada!');
+      updateCopilotDiagnostics();
+    }
+  },
+  presets_capcut: {
+    answer: "O ClipCut inclui 4 presets visuais de 1 clique: Hormozi (Branco + Amarelo), TikTok Box (Caixa escura arredondada), Amarelo Pop (Amarelo + Verde Neon) e Neon Clean (Ciano + Amarelo).",
+    btnText: "🎨 Aplicar Preset TikTok Box",
+    action: () => {
+      const btn = document.querySelector('.preset-btn[data-preset="tiktok"]');
+      if (btn) btn.click();
+    }
+  },
+  exportar_video: {
+    answer: "Você pode baixar o arquivo de legendas .SRT sincronizado aqui no navegador ou baixar o aplicativo nativo para o seu sistema (Linux, Windows, Mac) para exportar MP4 acelerado pela GPU.",
+    btnText: "⬇️ Baixar Instalador Nativo",
+    action: () => {
+      openDownloadModal();
+    }
+  },
+  importar_srt: {
+    answer: "Para importar legendas prontas, basta clicar em 'Importar .SRT' na barra esquerda. O ClipCut sincroniza todas as falas instantaneamente.",
+    btnText: "📄 Selecionar Arquivo .SRT",
+    action: () => {
+      document.getElementById('srt-upload').click();
+    }
+  }
+};
+
+function appendCopilotMessage(sender, text, actionBtnData) {
+  if (!copilotFeed) return;
+  const msgDiv = document.createElement('div');
+  msgDiv.className = `chat-msg ${sender === 'user' ? 'msg-user' : 'msg-ai'}`;
+  
+  const authorDiv = document.createElement('div');
+  authorDiv.className = 'msg-author';
+  authorDiv.textContent = sender === 'user' ? 'Você' : '✨ Copiloto ClipCut';
+  msgDiv.appendChild(authorDiv);
+
+  const contentDiv = document.createElement('div');
+  contentDiv.className = 'msg-content';
+  contentDiv.textContent = text;
+  msgDiv.appendChild(contentDiv);
+
+  if (actionBtnData && actionBtnData.btnText && actionBtnData.action) {
+    const actBtn = document.createElement('button');
+    actBtn.type = 'button';
+    actBtn.className = 'msg-action-btn';
+    actBtn.textContent = actionBtnData.btnText;
+    actBtn.addEventListener('click', () => {
+      actionBtnData.action();
+      updateCopilotDiagnostics();
+    });
+    msgDiv.appendChild(actBtn);
+  }
+
+  copilotFeed.appendChild(msgDiv);
+  copilotFeed.scrollTop = copilotFeed.scrollHeight;
+}
+
+function handleCopilotQuery(keyOrText) {
+  const kbItem = COPILOT_KB[keyOrText];
+  if (kbItem) {
+    appendCopilotMessage('user', keyOrText.replace(/_/g, ' '));
+    setTimeout(() => {
+      appendCopilotMessage('ai', kbItem.answer, kbItem);
+    }, 220);
+    return;
+  }
+
+  const query = keyOrText.toLowerCase().trim();
+  appendCopilotMessage('user', keyOrText);
+
+  setTimeout(() => {
+    if (query.includes('karaoke') || query.includes('legenda') || query.includes('palavra') || query.includes('cor')) {
+      appendCopilotMessage('ai', COPILOT_KB.como_fazer_karaoke.answer, COPILOT_KB.como_fazer_karaoke);
+    } else if (query.includes('silêncio') || query.includes('silencio') || query.includes('pausa') || query.includes('cort')) {
+      appendCopilotMessage('ai', COPILOT_KB.cortar_silencios.answer, COPILOT_KB.cortar_silencios);
+    } else if (query.includes('9:16') || query.includes('vertical') || query.includes('reels') || query.includes('tiktok') || query.includes('shorts')) {
+      appendCopilotMessage('ai', COPILOT_KB.formato_916.answer, COPILOT_KB.formato_916);
+    } else if (query.includes('zoom') || query.includes('punch') || query.includes('dinâmico')) {
+      appendCopilotMessage('ai', COPILOT_KB.zoom_dinamico.answer, COPILOT_KB.zoom_dinamico);
+    } else if (query.includes('pop') || query.includes('anima') || query.includes('elastico') || query.includes('mola')) {
+      appendCopilotMessage('ai', COPILOT_KB.animacao_pop.answer, COPILOT_KB.animacao_pop);
+    } else if (query.includes('preset') || query.includes('hormozi') || query.includes('estilo')) {
+      appendCopilotMessage('ai', COPILOT_KB.presets_capcut.answer, COPILOT_KB.presets_capcut);
+    } else if (query.includes('export') || query.includes('mp4') || query.includes('salvar') || query.includes('baixar')) {
+      appendCopilotMessage('ai', COPILOT_KB.exportar_video.answer, COPILOT_KB.exportar_video);
+    } else if (query.includes('srt') || query.includes('subrip') || query.includes('import')) {
+      appendCopilotMessage('ai', COPILOT_KB.importar_srt.answer, COPILOT_KB.importar_srt);
+    } else {
+      appendCopilotMessage('ai', `Com o ClipCut você pode editar e animar seu vídeo com total privacidade 100% offline. Você pode clicar nas sugestões acima para ajustar Karaokê, proporção 9:16 ou cortes automáticos!`, {
+        btnText: "✨ Ativar Karaokê Hormozi",
+        action: COPILOT_KB.como_fazer_karaoke.action
+      });
+    }
+  }, 240);
+}
+
+document.querySelectorAll('.copilot-chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    const q = chip.dataset.query;
+    if (q) handleCopilotQuery(q);
+  });
+});
+
+if (btnCopilotSubmit && inpCopilotQuery) {
+  const submitText = () => {
+    const val = inpCopilotQuery.value.trim();
+    if (!val) return;
+    inpCopilotQuery.value = '';
+    handleCopilotQuery(val);
+  };
+  btnCopilotSubmit.addEventListener('click', submitText);
+  inpCopilotQuery.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') submitText();
+  });
+}
+
 // Initialize default Karaoke phrases
 buildCaptionsFromText(scriptInput.value);
