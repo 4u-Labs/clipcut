@@ -5667,6 +5667,51 @@ impl Studio {
         self.notify(&t("textPanel.newTitlesUseThisStyle"), false);
     }
 
+    /// Takes the current selected title's style and applies its formatting
+    /// (font family, weight, size, color, stroke, background, alignment, etc.)
+    /// to every text clip on the active timeline, keeping each clip's content.
+    pub fn apply_title_style_to_all(&mut self) {
+        let Some(source_style) = self
+            .edit_targets()
+            .first()
+            .and_then(|id| self.clip(id))
+            .filter(|clip| clip.kind == model::ClipKind::Text)
+            .and_then(|clip| clip.text.clone())
+        else {
+            return;
+        };
+
+        // Also save this look as the default for new titles and captions
+        let mut def_style = source_style.clone();
+        def_style.content.clear();
+        self.prefs.title_style = Some(def_style);
+        self.prefs.save(&self.host.dirs);
+
+        let mut commands = Vec::new();
+        for clip in &self.timeline().clips {
+            if clip.kind == model::ClipKind::Text {
+                if let Some(existing_text) = &clip.text {
+                    let mut updated_style = source_style.clone();
+                    // Keep each caption's own words!
+                    updated_style.content = existing_text.content.clone();
+                    commands.push(Command::UpdateClip {
+                        clip_id: clip.id.clone(),
+                        patch: ClipPatch {
+                            text: Some(Some(updated_style)),
+                            ..Default::default()
+                        },
+                    });
+                }
+            }
+        }
+
+        if !commands.is_empty() {
+            let count = commands.len();
+            self.apply(Command::Batch { commands });
+            self.notify(&tf("textPanel.allCaptionsUpdated", &[&count]), false);
+        }
+    }
+
     /// The inspector's gesture is over: what differs between the echo and
     /// the session becomes commands, as one batch.
     /// An inspector control changed something on the echo and wants it

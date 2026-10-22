@@ -889,6 +889,9 @@ fn start(project: Option<std::path::PathBuf>, smoke: bool) -> Result<(), slint::
     editor.on_text_style_default(on_window!(|state| {
         state.use_title_style_for_new();
     }));
+    editor.on_text_style_apply_all(on_window!(|state| {
+        state.apply_title_style_to_all();
+    }));
     editor.on_import_font(|| {
         Shell::with(|shell, _| {
             if shell.studio.borrow().session.is_none() {
@@ -2099,6 +2102,9 @@ fn start(project: Option<std::path::PathBuf>, smoke: bool) -> Result<(), slint::
     }));
     app.on_captions_size_changed(on_window!(|state, index: i32| {
         state.handle(Msg::Captions(CaptionsMsg::SizeChanged(index)));
+    }));
+    app.on_captions_rhythm_changed(on_window!(|state, index: i32| {
+        state.handle(Msg::Captions(CaptionsMsg::RhythmChanged(index)));
     }));
     app.on_captions_begin(on_window!(|state| {
         state.handle(Msg::Captions(CaptionsMsg::Begin));

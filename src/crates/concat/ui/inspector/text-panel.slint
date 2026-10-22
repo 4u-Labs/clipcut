@@ -46,6 +46,8 @@ export component TextPanel inherits VerticalLayout {
     callback import-font();
     /// Keep this title's look for new titles and captions.
     callback set-default();
+    /// Apply this title's look (font, colors, size, position) to all text clips in the project.
+    callback apply-to-all();
 
     /// Several titles selected together: every knob writes to all of them
     /// and the words, each title's own, are not offered.
@@ -305,14 +307,22 @@ export component TextPanel inherits VerticalLayout {
         }
 
         // This look, kept: what new titles and generated captions start
-        // from. The words stay this title's own.
+        // from, or applied directly to all captions across the timeline.
         Row {
             label: "";
             label-width: root.label-w;
-            Button {
-                label: I18n.t("textPanel.useForNewTitles");
-                ghost: true;
-                clicked => { root.set-default(); }
+            VerticalLayout {
+                spacing: 6px;
+                Button {
+                    label: I18n.t("textPanel.applyToAll");
+                    primary: true;
+                    clicked => { root.apply-to-all(); }
+                }
+                Button {
+                    label: I18n.t("textPanel.useForNewTitles");
+                    ghost: true;
+                    clicked => { root.set-default(); }
+                }
             }
         }
 

@@ -59,6 +59,7 @@ pub enum CaptionsMsg {
     ModelChanged(i32),
     PlacementChanged(i32),
     SizeChanged(i32),
+    RhythmChanged(i32),
     /// Run the pass the sheet describes.
     Begin,
     Cancel,
@@ -84,6 +85,8 @@ struct Subject {
     speed: f64,
     /// The look chosen when the run began.
     look: (f64, f64),
+    /// 0 Standard, 1 Dynamic (rhythmic), 2 Karaoke
+    rhythm: usize,
     /// The transcriber model, and the thirty-second windows whisper reads
     /// the sound in: what the run's timing is kept by.
     model: String,
@@ -119,6 +122,8 @@ pub struct CaptionsPane {
     pub placement: usize,
     /// 0 small, 1 medium, 2 large.
     pub size: usize,
+    /// 0 Standard, 1 Dynamic (rhythmic), 2 Karaoke
+    pub rhythm: usize,
     pub running: bool,
     /// How far the running transcription looks.
     pub pace: Pace,
@@ -174,6 +179,7 @@ impl CaptionsPane {
                 self.placement = (index.max(0) as usize).min(2);
             }
             CaptionsMsg::SizeChanged(index) => self.size = (index.max(0) as usize).min(2),
+            CaptionsMsg::RhythmChanged(index) => self.rhythm = (index.max(0) as usize).min(2),
             CaptionsMsg::Begin => {
                 if self.from_voice {
                     self.run_sound(studio);
@@ -201,21 +207,25 @@ impl CaptionsPane {
                         };
                         let look = subject.look;
                         let base = studio.prefs.title_style.clone();
-                        let commands: Vec<Command> = segments
-                            .into_iter()
-                            .filter_map(|segment| {
-                                let text = segment.text.trim().to_owned();
-                                (!text.is_empty()).then(|| {
-                                    caption_clip(
-                                        text,
-                                        subject.start + segment.start / subject.speed,
-                                        ((segment.end - segment.start) / subject.speed).max(0.2),
-                                        look,
-                                        base.as_ref(),
-                                    )
+                        let commands: Vec<Command> = match subject.rhythm {
+                            1 => segments_to_dynamic_commands(segments, &subject, look, base.as_ref()),
+                            2 => segments_to_karaoke_commands(segments, &subject, look, base.as_ref()),
+                            _ => segments
+                                .into_iter()
+                                .filter_map(|segment| {
+                                    let text = segment.text.trim().to_owned();
+                                    (!text.is_empty()).then(|| {
+                                        caption_clip(
+                                            text,
+                                            subject.start + segment.start / subject.speed,
+                                            ((segment.end - segment.start) / subject.speed).max(0.2),
+                                            look,
+                                            base.as_ref(),
+                                        )
+                                    })
                                 })
-                            })
-                            .collect();
+                                .collect(),
+                        };
                         let count = commands.len();
                         self.open = false;
                         if count == 0 {
@@ -414,6 +424,7 @@ impl CaptionsPane {
             model,
             placement: 0,
             size: 1,
+            rhythm: self.rhythm,
             timings: std::mem::take(&mut self.timings),
             ..CaptionsPane::default()
         };
@@ -522,6 +533,7 @@ impl CaptionsPane {
             start: clip.start,
             speed: clip.speed,
             look: self.look(),
+            rhythm: self.rhythm,
             model,
             windows,
         });
@@ -564,6 +576,7 @@ impl CaptionsPane {
             model: self.model as i32,
             placement: self.placement as i32,
             size: self.size as i32,
+            rhythm: self.rhythm as i32,
             running: self.running,
             progress: self.pace.floor,
             ceiling: self.pace.ceiling,
@@ -772,6 +785,117 @@ fn caption_clip(
         duration: Some(duration),
         offset_y: Some(offset_y),
     }
+}
+
+/// Dynamic speech sync: splits long phrases into 2-3 word rhythmic chunks
+/// that follow the cadence of speech (Reels/TikTok/Shorts style).
+fn segments_to_dynamic_commands(
+    segments: Vec<Segment>,
+    subject: &Subject,
+    look: (f64, f64),
+    base: Option<&TextStyle>,
+) -> Vec<Command> {
+    let mut commands = Vec::new();
+    for segment in segments {
+        let text = segment.text.trim();
+        if text.is_empty() {
+            continue;
+        }
+        let words: Vec<&str> = text.split_whitespace().collect();
+        if words.is_empty() {
+            continue;
+        }
+        let seg_start = subject.start + segment.start / subject.speed;
+        let seg_duration = ((segment.end - segment.start) / subject.speed).max(0.2);
+
+        // Group into chunks of 2 to 3 words
+        let mut chunks: Vec<String> = Vec::new();
+        let mut cur_chunk = Vec::new();
+        for word in words {
+            cur_chunk.push(word);
+            if cur_chunk.len() >= 3 {
+                chunks.push(cur_chunk.join(" "));
+                cur_chunk.clear();
+            }
+        }
+        if !cur_chunk.is_empty() {
+            if let Some(last) = chunks.last_mut() {
+                if cur_chunk.len() == 1 {
+                    last.push(' ');
+                    last.push_str(&cur_chunk.join(" "));
+                } else {
+                    chunks.push(cur_chunk.join(" "));
+                }
+            } else {
+                chunks.push(cur_chunk.join(" "));
+            }
+        }
+
+        let total_chars: usize = chunks.iter().map(|c| c.chars().count()).sum();
+        let mut cur_time = seg_start;
+        for chunk in chunks {
+            let chunk_chars = chunk.chars().count().max(1);
+            let dur = (seg_duration * (chunk_chars as f64 / total_chars.max(1) as f64)).max(0.25);
+            commands.push(caption_clip(chunk, cur_time, dur, look, base));
+            cur_time += dur;
+        }
+    }
+    commands
+}
+
+/// Karaoke style: each spoken word is highlighted in vivid yellow with bold weight.
+fn segments_to_karaoke_commands(
+    segments: Vec<Segment>,
+    subject: &Subject,
+    look: (f64, f64),
+    base: Option<&TextStyle>,
+) -> Vec<Command> {
+    let mut commands = Vec::new();
+    let mut karaoke_style = base.cloned().unwrap_or_else(|| TextStyle {
+        font_family: "Hanken Grotesk".to_owned(),
+        font_size: look.1,
+        font_weight: 700.0,
+        ..TextStyle::default()
+    });
+    karaoke_style.color = "#FFDE00".to_string(); // Vivid karaoke yellow
+    karaoke_style.font_weight = 700.0;
+
+    for segment in segments {
+        let text = segment.text.trim();
+        if text.is_empty() {
+            continue;
+        }
+        let words: Vec<&str> = text.split_whitespace().collect();
+        if words.is_empty() {
+            continue;
+        }
+        let seg_start = subject.start + segment.start / subject.speed;
+        let seg_duration = ((segment.end - segment.start) / subject.speed).max(0.2);
+
+        // Group into 1-2 words per rhythm highlight
+        let mut chunks: Vec<String> = Vec::new();
+        let mut cur_chunk = Vec::new();
+        for word in words {
+            cur_chunk.push(word);
+            if cur_chunk.len() >= 2 {
+                chunks.push(cur_chunk.join(" "));
+                cur_chunk.clear();
+            }
+        }
+        if !cur_chunk.is_empty() {
+            chunks.push(cur_chunk.join(" "));
+        }
+
+        let total_chars: usize = chunks.iter().map(|c| c.chars().count()).sum();
+        let mut cur_time = seg_start;
+        for chunk in chunks {
+            let chunk_chars = chunk.chars().count().max(1);
+            let dur = (seg_duration * (chunk_chars as f64 / total_chars.max(1) as f64)).max(0.2);
+            commands.push(caption_clip(chunk, cur_time, dur, look, Some(&karaoke_style)));
+            cur_time += dur;
+        }
+    }
+    commands
 }
 
 /// Longest a caption line gets before it is wrapped: about what two lines
