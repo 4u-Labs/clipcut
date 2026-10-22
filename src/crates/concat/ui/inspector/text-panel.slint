@@ -327,6 +327,65 @@ export component TextPanel inherits VerticalLayout {
         }
 
         Row {
+            label: I18n.t("textPanel.capcutPresets");
+            label-width: root.label-w;
+            VerticalLayout {
+                spacing: 6px;
+                HorizontalLayout {
+                    spacing: 6px;
+                    Button {
+                        horizontal-stretch: 1;
+                        block: true;
+                        ghost: true;
+                        label: "Hormozi";
+                        clicked => { root.set-text(ClipTextField.font-family, "__preset:hormozi"); }
+                    }
+                    Button {
+                        horizontal-stretch: 1;
+                        block: true;
+                        ghost: true;
+                        label: "TikTok Box";
+                        clicked => { root.set-text(ClipTextField.font-family, "__preset:tiktok"); }
+                    }
+                }
+                HorizontalLayout {
+                    spacing: 6px;
+                    Button {
+                        horizontal-stretch: 1;
+                        block: true;
+                        ghost: true;
+                        label: "Amarelo Pop";
+                        clicked => { root.set-text(ClipTextField.font-family, "__preset:yellow"); }
+                    }
+                    Button {
+                        horizontal-stretch: 1;
+                        block: true;
+                        ghost: true;
+                        label: "Neon Clean";
+                        clicked => { root.set-text(ClipTextField.font-family, "__preset:neon"); }
+                    }
+                }
+                HorizontalLayout {
+                    spacing: 6px;
+                    Button {
+                        horizontal-stretch: 1;
+                        block: true;
+                        ghost: true;
+                        label: I18n.t("textPanel.animPop");
+                        clicked => { root.set-text(ClipTextField.font-family, "__preset:pop"); }
+                    }
+                    Button {
+                        horizontal-stretch: 1;
+                        block: true;
+                        ghost: true;
+                        label: I18n.t("textPanel.animNone");
+                        clicked => { root.set-text(ClipTextField.font-family, "__preset:no_anim"); }
+                    }
+                }
+            }
+        }
+
+        Row {
             label: I18n.t("textPanel.fontWeight");
             label-width: root.label-w;
             Select {

@@ -806,11 +806,40 @@ fn joins(ch: char) -> bool {
         || ('\u{E0020}'..='\u{E007F}').contains(&ch)
 }
 
+/// Strips inline `*word*` karaoke markers from a line while recording
+/// the byte ranges of the highlighted spans in the stripped string.
+/// An unmatched `*` is preserved literally.
+fn strip_and_find_highlights(line: &str) -> (String, Vec<Range<usize>>) {
+    let mut clean = String::with_capacity(line.len());
+    let mut highlights = Vec::new();
+    let mut rest = line;
+    while let Some(open) = rest.find('*') {
+        clean.push_str(&rest[..open]);
+        let after_open = &rest[open + 1..];
+        if let Some(close) = after_open.find('*') {
+            let inner = &after_open[..close];
+            if !inner.trim().is_empty() {
+                let start = clean.len();
+                clean.push_str(inner);
+                let end = clean.len();
+                highlights.push(start..end);
+                rest = &after_open[close + 1..];
+                continue;
+            }
+        }
+        clean.push('*');
+        rest = after_open;
+    }
+    clean.push_str(rest);
+    (clean, highlights)
+}
+
 /// One shaped line: its outline path in pixels, pen at the origin, its
 /// advance width, and each of its words' `(start_x, end_x)` in that same
 /// pen space, left to right.
 struct Line {
     path: Option<Path>,
+    hl_path: Option<Path>,
     /// The glyphs that paint their own colours - a picture rather than an
     /// outline - at that same pen origin, for laying over the words. The
     /// fill would wash their colours out, so they stay out of `path`.
@@ -917,6 +946,7 @@ struct Paragraph<'a> {
     text: &'a str,
     bidi: ParagraphBidiInfo<'a>,
     face_of: &'a [usize],
+    highlights: &'a [Range<usize>],
 }
 
 impl Setter<'_> {
@@ -975,6 +1005,7 @@ impl Setter<'_> {
         if range.is_empty() {
             return Line {
                 path: None,
+                hl_path: None,
                 marks: Vec::new(),
                 width: 0.0,
                 words: Vec::new(),
@@ -982,6 +1013,7 @@ impl Setter<'_> {
         }
         let (levels, runs) = para.bidi.visual_runs(range.clone());
         let mut builder = PathBuilder::new();
+        let mut hl_builder = PathBuilder::new();
         let mut marks: Vec<Mark> = Vec::new();
         let mut pen = 0.0_f32;
         // Each glyph's cluster, as a byte into the paragraph, and the span
@@ -1018,6 +1050,7 @@ impl Setter<'_> {
                     .iter()
                     .zip(shaped.glyph_positions().iter())
                 {
+                    let cluster_byte = piece.start + info.cluster as usize;
                     if outline {
                         let glyph = ttf_parser::GlyphId(info.glyph_id as u16);
                         let x = pen + position.x_offset as f32 * scale;
@@ -1037,10 +1070,19 @@ impl Setter<'_> {
                                 y,
                             };
                             face.outline_glyph(glyph, &mut outliner);
+                            if para.highlights.iter().any(|r| r.contains(&cluster_byte)) {
+                                let mut hl_outliner = Outliner {
+                                    builder: &mut hl_builder,
+                                    scale,
+                                    x,
+                                    y,
+                                };
+                                face.outline_glyph(glyph, &mut hl_outliner);
+                            }
                         }
                     }
                     let advance = position.x_advance as f32 * scale;
-                    spans.push((piece.start + info.cluster as usize, pen, pen + advance));
+                    spans.push((cluster_byte, pen, pen + advance));
                     pen += advance + self.tracking;
                 }
             }
@@ -1068,6 +1110,7 @@ impl Setter<'_> {
         };
         Line {
             path: builder.finish(),
+            hl_path: hl_builder.finish(),
             marks,
             width,
             words,
@@ -1295,7 +1338,20 @@ fn paint(
     let tracking = style.tracking as f32 * frame_h;
     let pitch = em * (style.line_height.max(0.5) as f32);
 
-    let casting = fonts.cast(style)?;
+    let parsed_lines: Vec<(String, Vec<Range<usize>>)> = style
+        .content
+        .lines()
+        .map(strip_and_find_highlights)
+        .collect();
+    let clean_content: String = parsed_lines
+        .iter()
+        .map(|(s, _)| s.as_str())
+        .collect::<Vec<_>>()
+        .join("\n");
+    let mut clean_style = style.clone();
+    clean_style.content = clean_content;
+
+    let casting = fonts.cast(&clean_style)?;
     let own = {
         let (data, index) = &casting.faces[0];
         rustybuzz::Face::from_slice((**data).as_ref(), *index).ok_or(Error::BadFont)?
@@ -1361,15 +1417,15 @@ fn paint(
         tracking,
         foreground: rgba(fill),
     };
-    let lines: Vec<Line> = style
-        .content
-        .lines()
+    let lines: Vec<Line> = parsed_lines
+        .iter()
         .zip(&casting.paragraphs)
-        .flat_map(|(text, face_of)| {
+        .flat_map(|((text, highlights), face_of)| {
             let para = Paragraph {
-                text,
-                bidi: ParagraphBidiInfo::new(text, None),
+                text: text.as_str(),
+                bidi: ParagraphBidiInfo::new(text.as_str(), None),
                 face_of,
+                highlights,
             };
             setter.wrap(&para, wrap_w)
         })
@@ -1422,6 +1478,7 @@ fn paint(
     // same indent and baseline, in reading order - a line that paints
     // its glyphs' own colours has no path to place but still has words.
     let mut words = PathBuilder::new();
+    let mut hl_words = PathBuilder::new();
     let mut word_rects = Vec::new();
     for (row, line) in lines.iter().enumerate() {
         let indent = match style.align {
@@ -1430,12 +1487,20 @@ fn paint(
             Align::Right => box_w - line.width,
         };
         let baseline = top + ascent + row as f32 * pitch;
+        let xform = Transform::from_translate(left + indent, baseline);
         if let Some(path) = &line.path {
             let placed = path
                 .clone()
-                .transform(Transform::from_translate(left + indent, baseline))
+                .transform(xform)
                 .expect("a translated glyph path stays finite");
             words.push_path(&placed);
+        }
+        if let Some(hl_path) = &line.hl_path {
+            let placed = hl_path
+                .clone()
+                .transform(xform)
+                .expect("a translated glyph path stays finite");
+            hl_words.push_path(&placed);
         }
         let line_top = baseline - ascent;
         for &(start_x, end_x) in &line.words {
@@ -1448,6 +1513,7 @@ fn paint(
         }
     }
     let words = words.finish();
+    let hl_words = hl_words.finish();
 
     let mut paint = Paint {
         anti_alias: true,
@@ -1519,6 +1585,26 @@ fn paint(
         paint.set_color(fill);
         canvas.fill_path(
             words,
+            &paint,
+            FillRule::Winding,
+            Transform::identity(),
+            None,
+        );
+    }
+
+    // Highlighted words (*palavra*): painted in vibrant CapCut Yellow (#FFDE00),
+    // or Neon Green (#00FF88) when the base fill is already yellow.
+    if let Some(hl_words) = &hl_words {
+        let is_yellow_base = fill.red() > 0.8 && fill.green() > 0.7 && fill.blue() < 0.4;
+        let alpha_u8 = (fill.alpha() * 255.0).round() as u8;
+        let hl_fill = if is_yellow_base {
+            Color::from_rgba8(0, 255, 136, alpha_u8)
+        } else {
+            Color::from_rgba8(255, 222, 0, alpha_u8)
+        };
+        paint.set_color(hl_fill);
+        canvas.fill_path(
+            hl_words,
             &paint,
             FillRule::Winding,
             Transform::identity(),

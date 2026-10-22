@@ -1,0 +1,20 @@
+{
+  "name": "ClipCut Studio — 4u-Labs",
+  "short_name": "ClipCut",
+  "description": "Editor de Vídeo Multiplataforma com Legendas Karaoke, Presets CapCut, Corte de Silêncios e Zoom Dinâmico (100% Local/Offline).",
+  "start_url": "./index.html?mode=standalone",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#090d16",
+  "theme_color": "#090d16",
+  "categories": ["video", "multimedia", "productivity"],
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

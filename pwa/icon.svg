@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#1e1b4b"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00f0ff"/>
+      <stop offset="100%" stop-color="#7c3aed"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <rect x="24" y="24" width="464" height="464" rx="96" fill="none" stroke="url(#accent)" stroke-width="6" opacity="0.4"/>
+  <path d="M156 144h120c13.255 0 24 10.745 24 24v176c0 13.255-10.745 24-24 24H156c-13.255 0-24-10.745-24-24V168c0-13.255 10.745-24 24-24z" fill="url(#accent)" opacity="0.2"/>
+  <polygon points="200,192 200,312 304,252" fill="#00f0ff"/>
+  <rect x="116" y="348" width="280" height="52" rx="14" fill="#090d16" stroke="#ffde00" stroke-width="4"/>
+  <text x="256" y="383" font-family="system-ui, sans-serif" font-weight="900" font-size="28" fill="#ffde00" text-anchor="middle">CLIPCUT</text>
+</svg>

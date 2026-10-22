@@ -383,6 +383,36 @@ export component CaptionsDialog inherits Modal {
                     clicked => { root.export-srt(); }
                 }
             }
+
+            if !root.data.running: HorizontalLayout {
+                spacing: 8px;
+
+                Button {
+                    horizontal-stretch: 1;
+                    block: true;
+                    ghost: true;
+                    label: I18n.t("captions.removeSilences");
+                    enabled: root.data.source >= 0;
+                    clicked => { root.rhythm-changed(10); }
+                }
+
+                Button {
+                    horizontal-stretch: 1;
+                    block: true;
+                    ghost: true;
+                    label: I18n.t("captions.punchInZoom");
+                    enabled: root.data.source >= 0;
+                    clicked => { root.rhythm-changed(11); }
+                }
+
+                Button {
+                    horizontal-stretch: 1;
+                    block: true;
+                    ghost: true;
+                    label: I18n.t("captions.vertical916");
+                    clicked => { root.rhythm-changed(12); }
+                }
+            }
         }
     }
 }

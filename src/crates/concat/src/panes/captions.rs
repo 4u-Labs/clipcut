@@ -179,7 +179,22 @@ impl CaptionsPane {
                 self.placement = (index.max(0) as usize).min(2);
             }
             CaptionsMsg::SizeChanged(index) => self.size = (index.max(0) as usize).min(2),
-            CaptionsMsg::RhythmChanged(index) => self.rhythm = (index.max(0) as usize).min(2),
+            CaptionsMsg::RhythmChanged(index) => match index {
+                10 => {
+                    if let Some(clip_id) = self.subject_clip(studio, &sources(studio)) {
+                        studio.remove_silences_from_clip(&clip_id);
+                    }
+                }
+                11 => {
+                    if let Some(clip_id) = self.subject_clip(studio, &sources(studio)) {
+                        studio.apply_dynamic_punch_in(&clip_id);
+                    }
+                }
+                12 => {
+                    studio.set_vertical_9_16();
+                }
+                _ => self.rhythm = (index.max(0) as usize).min(2),
+            },
             CaptionsMsg::Begin => {
                 if self.from_voice {
                     self.run_sound(studio);
@@ -843,7 +858,9 @@ fn segments_to_dynamic_commands(
     commands
 }
 
-/// Karaoke style: each spoken word is highlighted in vivid yellow with bold weight.
+/// Karaoke style (CapCut style): keeps the 3-4 word phrase steady on screen in white
+/// with a bold black outline while highlighting ONLY the currently spoken word (*word*)
+/// in vibrant yellow (#FFDE00).
 fn segments_to_karaoke_commands(
     segments: Vec<Segment>,
     subject: &Subject,
@@ -855,10 +872,24 @@ fn segments_to_karaoke_commands(
         font_family: "Hanken Grotesk".to_owned(),
         font_size: look.1,
         font_weight: 700.0,
+        color: "#FFFFFF".to_owned(),
+        stroke_width: 0.012,
+        stroke_color: "#000000FF".to_owned(),
+        shadow: true,
         ..TextStyle::default()
     });
-    karaoke_style.color = "#FFDE00".to_string(); // Vivid karaoke yellow
-    karaoke_style.font_weight = 700.0;
+    // Ensure base phrase is white (not all-yellow) so only the *spoken* word turns yellow
+    if karaoke_style.color.eq_ignore_ascii_case("#FFDE00")
+        || karaoke_style.color.eq_ignore_ascii_case("#FFFF00")
+    {
+        karaoke_style.color = "#FFFFFF".to_owned();
+    }
+    karaoke_style.font_weight = karaoke_style.font_weight.max(700.0);
+    if karaoke_style.stroke_width < 0.008 {
+        karaoke_style.stroke_width = 0.012;
+        karaoke_style.stroke_color = "#000000FF".to_owned();
+    }
+    karaoke_style.shadow = true;
 
     for segment in segments {
         let text = segment.text.trim();
@@ -872,27 +903,72 @@ fn segments_to_karaoke_commands(
         let seg_start = subject.start + segment.start / subject.speed;
         let seg_duration = ((segment.end - segment.start) / subject.speed).max(0.2);
 
-        // Group into 1-2 words per rhythm highlight
-        let mut chunks: Vec<String> = Vec::new();
-        let mut cur_chunk = Vec::new();
+        // Group segment words into readable 3-4 word phrases (avoiding 1-word orphans)
+        let mut phrases: Vec<Vec<&str>> = Vec::new();
+        let mut cur_phrase: Vec<&str> = Vec::new();
         for word in words {
-            cur_chunk.push(word);
-            if cur_chunk.len() >= 2 {
-                chunks.push(cur_chunk.join(" "));
-                cur_chunk.clear();
+            cur_phrase.push(word);
+            if cur_phrase.len() >= 4 {
+                phrases.push(std::mem::take(&mut cur_phrase));
             }
         }
-        if !cur_chunk.is_empty() {
-            chunks.push(cur_chunk.join(" "));
+        if !cur_phrase.is_empty() {
+            if cur_phrase.len() == 1 && !phrases.is_empty() {
+                if let Some(last_phrase) = phrases.last_mut() {
+                    if last_phrase.len() < 5 {
+                        last_phrase.extend(cur_phrase);
+                    } else {
+                        phrases.push(cur_phrase);
+                    }
+                }
+            } else {
+                phrases.push(cur_phrase);
+            }
         }
 
-        let total_chars: usize = chunks.iter().map(|c| c.chars().count()).sum();
+        let total_seg_weight: usize = phrases
+            .iter()
+            .flat_map(|p| p.iter())
+            .map(|w| w.chars().count() + 1)
+            .sum::<usize>()
+            .max(1);
+
         let mut cur_time = seg_start;
-        for chunk in chunks {
-            let chunk_chars = chunk.chars().count().max(1);
-            let dur = (seg_duration * (chunk_chars as f64 / total_chars.max(1) as f64)).max(0.2);
-            commands.push(caption_clip(chunk, cur_time, dur, look, Some(&karaoke_style)));
-            cur_time += dur;
+        for phrase in phrases {
+            let phrase_weight: usize = phrase
+                .iter()
+                .map(|w| w.chars().count() + 1)
+                .sum::<usize>()
+                .max(1);
+            let phrase_dur = seg_duration * (phrase_weight as f64 / total_seg_weight as f64);
+
+            for (word_idx, &spoken_word) in phrase.iter().enumerate() {
+                let word_weight = spoken_word.chars().count() + 1;
+                let word_dur =
+                    (phrase_dur * (word_weight as f64 / phrase_weight as f64)).max(0.12);
+                let highlighted_phrase: String = phrase
+                    .iter()
+                    .enumerate()
+                    .map(|(i, &w)| {
+                        let clean_w = w.replace('*', "");
+                        if i == word_idx {
+                            format!("*{clean_w}*")
+                        } else {
+                            clean_w
+                        }
+                    })
+                    .collect::<Vec<_>>()
+                    .join(" ");
+
+                commands.push(caption_clip(
+                    highlighted_phrase,
+                    cur_time,
+                    word_dur,
+                    look,
+                    Some(&karaoke_style),
+                ));
+                cur_time += word_dur;
+            }
         }
     }
     commands

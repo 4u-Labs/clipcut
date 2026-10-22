@@ -5468,6 +5468,10 @@ impl Studio {
         // is set in it, as a command of its own: the painter reads the
         // project's fonts, and the echo below is not the project.
         if field == ClipTextField::FontFamily {
+            if let Some(preset) = value.strip_prefix("__preset:") {
+                self.apply_caption_preset(preset);
+                return;
+            }
             self.ensure_font(value);
         }
         self.commit_targets = ids.clone();
@@ -5652,6 +5656,7 @@ impl Studio {
     /// the preferences, so it outlives the project.
     /// https://github.com/jub0t/Concat/issues/224
     pub fn use_title_style_for_new(&mut self) {
+        self.flush_commit();
         let Some(mut style) = self
             .edit_targets()
             .first()
@@ -5668,16 +5673,20 @@ impl Studio {
     }
 
     /// Takes the current selected title's style and applies its formatting
-    /// (font family, weight, size, color, stroke, background, alignment, etc.)
+    /// (font family, weight, size, color, stroke, background, alignment, position)
     /// to every text clip on the active timeline, keeping each clip's content.
     pub fn apply_title_style_to_all(&mut self) {
-        let Some(source_style) = self
+        self.flush_commit();
+        let Some(source_clip) = self
             .edit_targets()
             .first()
             .and_then(|id| self.clip(id))
             .filter(|clip| clip.kind == model::ClipKind::Text)
-            .and_then(|clip| clip.text.clone())
+            .cloned()
         else {
+            return;
+        };
+        let Some(source_style) = source_clip.text.clone() else {
             return;
         };
 
@@ -5688,6 +5697,7 @@ impl Studio {
         self.prefs.save(&self.host.dirs);
 
         let mut commands = Vec::new();
+        let mut count = 0usize;
         for clip in &self.timeline().clips {
             if clip.kind == model::ClipKind::Text {
                 if let Some(existing_text) = &clip.text {
@@ -5698,18 +5708,379 @@ impl Studio {
                         clip_id: clip.id.clone(),
                         patch: ClipPatch {
                             text: Some(Some(updated_style)),
+                            opacity: Some(source_clip.opacity),
                             ..Default::default()
                         },
                     });
+                    commands.push(Command::SetClipTransform {
+                        clip_id: clip.id.clone(),
+                        scale: Some(source_clip.scale),
+                        offset_x: Some(source_clip.offset_x),
+                        offset_y: Some(source_clip.offset_y),
+                        rotation: None,
+                        stretch_x: None,
+                        stretch_y: None,
+                    });
+                    count += 1;
                 }
             }
         }
 
         if !commands.is_empty() {
-            let count = commands.len();
             self.apply(Command::Batch { commands });
             self.notify(&tf("textPanel.allCaptionsUpdated", &[&count]), false);
         }
+    }
+
+    /// Applies one of the built-in CapCut visual presets or entrance animations
+    /// across all text clips on the active timeline.
+    pub fn apply_caption_preset(&mut self, preset: &str) {
+        self.flush_commit();
+        if preset == "pop" || preset == "no_anim" {
+            let mut text_clips: Vec<model::Clip> = self
+                .timeline()
+                .clips
+                .iter()
+                .filter(|c| c.kind == model::ClipKind::Text)
+                .map(|c| (**c).clone())
+                .collect();
+            text_clips.sort_by(|a, b| a.start.total_cmp(&b.start));
+            if text_clips.is_empty() {
+                return;
+            }
+            let mut commands = Vec::new();
+            let count = text_clips.len();
+            let mut prev_clean_phrase = String::new();
+            for clip in text_clips {
+                commands.push(Command::ClearClipKeys {
+                    clip_id: clip.id.clone(),
+                    property: model::KeyProperty::Scale,
+                });
+                if preset == "pop" {
+                    let clean_phrase = clip
+                        .text
+                        .as_ref()
+                        .map(|t| t.content.replace('*', "").trim().to_owned())
+                        .unwrap_or_default();
+                    // In Karaoke mode, only pop on the first word of each new phrase
+                    if clean_phrase.is_empty() || clean_phrase != prev_clean_phrase {
+                        let dur = clip.duration.max(0.15);
+                        let peak_at = (0.09 / dur).clamp(0.08, 0.45);
+                        let settle_at = (0.18 / dur).clamp(0.16, 0.85);
+                        commands.push(Command::SetClipKey {
+                            clip_id: clip.id.clone(),
+                            property: model::KeyProperty::Scale,
+                            at: 0.0,
+                            value: 0.76,
+                            ease: model::KeyEase::LINEAR,
+                        });
+                        commands.push(Command::SetClipKey {
+                            clip_id: clip.id.clone(),
+                            property: model::KeyProperty::Scale,
+                            at: peak_at,
+                            value: 1.08,
+                            ease: model::KeyEase([0.22, 1.0, 0.36, 1.0]),
+                        });
+                        commands.push(Command::SetClipKey {
+                            clip_id: clip.id.clone(),
+                            property: model::KeyProperty::Scale,
+                            at: settle_at,
+                            value: 1.0,
+                            ease: model::KeyEase([0.42, 0.0, 0.58, 1.0]),
+                        });
+                    }
+                    prev_clean_phrase = clean_phrase;
+                } else {
+                    commands.push(Command::SetClipTransform {
+                        clip_id: clip.id.clone(),
+                        scale: Some(1.0),
+                        offset_x: None,
+                        offset_y: None,
+                        rotation: None,
+                        stretch_x: None,
+                        stretch_y: None,
+                    });
+                }
+            }
+            self.apply(Command::Batch { commands });
+            self.notify(&tf("textPanel.allCaptionsUpdated", &[&count]), false);
+            return;
+        }
+
+        let base_style = self
+            .edit_targets()
+            .first()
+            .and_then(|id| self.clip(id))
+            .and_then(|c| c.text.clone())
+            .or_else(|| self.prefs.title_style.clone())
+            .unwrap_or_default();
+
+        let mut style = base_style;
+        match preset {
+            "hormozi" => {
+                style.font_weight = 700.0;
+                style.color = "#FFFFFF".to_owned();
+                style.stroke_width = 0.012;
+                style.stroke_color = "#000000FF".to_owned();
+                style.shadow = true;
+                style.background.clear();
+            }
+            "tiktok" => {
+                style.font_weight = 700.0;
+                style.color = "#FFFFFF".to_owned();
+                style.stroke_width = 0.0;
+                style.shadow = false;
+                style.background = "#000000CC".to_owned();
+                style.background_radius = 0.018;
+                style.background_padding_x = 0.024;
+                style.background_padding_y = 0.012;
+            }
+            "yellow" => {
+                style.font_weight = 700.0;
+                style.color = "#FFDE00".to_owned();
+                style.stroke_width = 0.014;
+                style.stroke_color = "#000000FF".to_owned();
+                style.shadow = true;
+                style.background.clear();
+            }
+            "neon" => {
+                style.font_weight = 700.0;
+                style.color = "#00F0FF".to_owned();
+                style.stroke_width = 0.012;
+                style.stroke_color = "#081020FF".to_owned();
+                style.shadow = true;
+                style.background.clear();
+            }
+            _ => return,
+        }
+
+        let mut def_style = style.clone();
+        def_style.content.clear();
+        self.prefs.title_style = Some(def_style);
+        self.prefs.save(&self.host.dirs);
+
+        let mut commands = Vec::new();
+        let mut count = 0usize;
+        for clip in &self.timeline().clips {
+            if clip.kind == model::ClipKind::Text {
+                if let Some(existing_text) = &clip.text {
+                    let mut updated = style.clone();
+                    updated.content = existing_text.content.clone();
+                    commands.push(Command::UpdateClip {
+                        clip_id: clip.id.clone(),
+                        patch: ClipPatch {
+                            text: Some(Some(updated)),
+                            ..Default::default()
+                        },
+                    });
+                    count += 1;
+                }
+            }
+        }
+        if !commands.is_empty() {
+            self.apply(Command::Batch { commands });
+            self.notify(&tf("textPanel.allCaptionsUpdated", &[&count]), false);
+        }
+    }
+
+    /// Automatically detects and removes silent pauses (>= 0.40s below -32 dB)
+    /// from a video or audio clip on the timeline in a single undoable batch.
+    pub fn remove_silences_from_clip(&mut self, clip_id: &str) {
+        self.flush_commit();
+        let Some(clip) = self.clip(clip_id).cloned() else {
+            return;
+        };
+        let Some(media) = self.project().media_by_id(&clip.media_id).cloned() else {
+            return;
+        };
+        let key = art_key(&clip.media_id, clip.audio_stream);
+        let peaks = if let Some(cached) = self.peaks.get(&key) {
+            cached.finest().clone()
+        } else {
+            let proj_path = self.session.as_ref().map(|s| s.path().to_owned());
+            match concat_host::media::peaks(&media.path, clip.audio_stream, proj_path.as_deref()) {
+                Ok(p) => p,
+                Err(_) => return,
+            }
+        };
+
+        let bps = peaks.buckets_per_second.max(1.0) as f64;
+        let total_buckets = peaks.max.len().min(peaks.min.len());
+        if total_buckets == 0 {
+            return;
+        }
+
+        let speed = clip.speed.max(0.1);
+        let src_start = clip.source_start;
+        let src_end = src_start + clip.duration * speed;
+        let step_src = 0.02 * speed; // 20ms timeline windows
+        let threshold = 0.025_f32; // ~ -32 dB
+        let min_silence_tl = 0.40_f64; // 400ms minimum pause to cut
+        let pad_tl = 0.06_f64; // 60ms natural breath padding
+
+        let mut silent_spans_tl: Vec<(f64, f64)> = Vec::new();
+        let mut cur_silence_start: Option<f64> = None;
+        let mut t_src = src_start;
+        while t_src < src_end {
+            let b_from = ((t_src * bps).floor() as usize).min(total_buckets.saturating_sub(1));
+            let b_to = (((t_src + step_src) * bps).ceil() as usize).min(total_buckets);
+            let mut max_amp = 0.0_f32;
+            for b in b_from..b_to.max(b_from + 1).min(total_buckets) {
+                let amp = peaks.max[b].abs().max(peaks.min[b].abs());
+                if amp > max_amp {
+                    max_amp = amp;
+                }
+            }
+            let t_tl = clip.start + (t_src - src_start) / speed;
+            if max_amp < threshold {
+                if cur_silence_start.is_none() {
+                    cur_silence_start = Some(t_tl);
+                }
+            } else if let Some(s_start) = cur_silence_start.take() {
+                if t_tl - s_start >= min_silence_tl {
+                    let cut_start = (s_start + pad_tl).max(clip.start);
+                    let cut_end = (t_tl - pad_tl).min(clip.start + clip.duration);
+                    if cut_end - cut_start >= 0.15 {
+                        silent_spans_tl.push((cut_start, cut_end));
+                    }
+                }
+            }
+            t_src += step_src;
+        }
+        if let Some(s_start) = cur_silence_start.take() {
+            let clip_end = clip.start + clip.duration;
+            if clip_end - s_start >= min_silence_tl {
+                let cut_start = (s_start + pad_tl).max(clip.start);
+                if clip_end - cut_start >= 0.15 {
+                    silent_spans_tl.push((cut_start, clip_end));
+                }
+            }
+        }
+
+        if silent_spans_tl.is_empty() {
+            self.notify(&t("captions.noSilencesFound"), false);
+            return;
+        }
+
+        // Build commands from right to left (end of clip to start) so `clip.id`
+        // always refers to the head piece and `ripple: true` closes every gap!
+        let clip_end = clip.start + clip.duration;
+        let mut commands = Vec::new();
+        let mut cut_count = 0usize;
+        for &(s_start, s_end) in silent_spans_tl.iter().rev() {
+            let cut_len = s_end - s_start;
+            if cut_len < 0.12 {
+                continue;
+            }
+            if s_end >= clip_end - 0.08 && s_start > clip.start + 0.15 {
+                commands.push(Command::TrimClip {
+                    clip_id: clip.id.clone(),
+                    edge: model::TrimEdge::End,
+                    delta: -(clip_end - s_start),
+                    ripple: true,
+                });
+                cut_count += 1;
+            } else if s_start <= clip.start + 0.08 && s_end < clip_end - 0.15 {
+                commands.push(Command::TrimClip {
+                    clip_id: clip.id.clone(),
+                    edge: model::TrimEdge::Start,
+                    delta: s_end - clip.start,
+                    ripple: true,
+                });
+                cut_count += 1;
+            } else if s_start > clip.start + 0.12 && s_end < clip_end - 0.12 {
+                commands.push(Command::SplitClips {
+                    clip_ids: vec![clip.id.clone()],
+                    time: s_end,
+                });
+                commands.push(Command::TrimClip {
+                    clip_id: clip.id.clone(),
+                    edge: model::TrimEdge::End,
+                    delta: -cut_len,
+                    ripple: true,
+                });
+                cut_count += 1;
+            }
+        }
+
+        if commands.is_empty() {
+            self.notify(&t("captions.noSilencesFound"), false);
+            return;
+        }
+        self.apply(Command::Batch { commands });
+        self.notify(&tf("captions.silencesRemoved", &[&cut_count]), false);
+    }
+
+    /// Applies CapCut-style dynamic Punch-In Zoom keyframes (100% <-> 114%)
+    /// to the target video clip to keep viewer retention high.
+    pub fn apply_dynamic_punch_in(&mut self, clip_id: &str) {
+        self.flush_commit();
+        let Some(clip) = self.clip(clip_id).cloned() else {
+            return;
+        };
+        let dur = clip.duration.max(1.0);
+        let base_scale = clip.scale.max(0.1);
+        let zoom_scale = (base_scale * 1.14).min(8.0);
+        let mut commands = vec![Command::ClearClipKeys {
+            clip_id: clip.id.clone(),
+            property: model::KeyProperty::Scale,
+        }];
+
+        let step = 3.5_f64;
+        let ramp = (0.18 / dur).clamp(0.01, 0.15);
+        let mut cur_time = 0.0_f64;
+        let mut zoomed = false;
+        while cur_time < dur {
+            let at = (cur_time / dur).clamp(0.0, 1.0);
+            let val = if zoomed { zoom_scale } else { base_scale };
+            commands.push(Command::SetClipKey {
+                clip_id: clip.id.clone(),
+                property: model::KeyProperty::Scale,
+                at,
+                value: val,
+                ease: model::KeyEase([0.25, 0.1, 0.25, 1.0]),
+            });
+            let hold_end = ((cur_time + step - 0.20) / dur).clamp(0.0, 1.0);
+            if hold_end > at + ramp {
+                commands.push(Command::SetClipKey {
+                    clip_id: clip.id.clone(),
+                    property: model::KeyProperty::Scale,
+                    at: hold_end,
+                    value: val,
+                    ease: model::KeyEase::LINEAR,
+                });
+            }
+            zoomed = !zoomed;
+            cur_time += step;
+        }
+
+        self.apply(Command::Batch { commands });
+        self.notify(&t("captions.punchInApplied"), false);
+    }
+
+    /// Converts the active timeline to vertical 9:16 (1080x1920 Reels/TikTok/Shorts)
+    /// and frames all video/image clips to Fill the vertical screen.
+    pub fn set_vertical_9_16(&mut self) {
+        self.flush_commit();
+        let timeline = self.timeline().clone();
+        let mut video = timeline.video.clone();
+        video.width = 1080;
+        video.height = 1920;
+        let mut commands = vec![Command::SetTimelineVideo {
+            timeline_id: timeline.id.clone(),
+            video,
+        }];
+        for clip in &timeline.clips {
+            if matches!(clip.kind, model::ClipKind::Video | model::ClipKind::Image) {
+                commands.push(Command::FrameClip {
+                    clip_id: clip.id.clone(),
+                    framing: model::Framing::Fill,
+                    at: 0.0,
+                });
+            }
+        }
+        self.apply(Command::Batch { commands });
+        self.notify(&t("captions.verticalApplied"), false);
     }
 
     /// The inspector's gesture is over: what differs between the echo and
