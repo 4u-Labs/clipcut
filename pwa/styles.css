@@ -1318,6 +1318,10 @@ textarea {
   border-radius: 10px;
   font-size: 0.86rem;
   font-weight: 600;
+  z-index: 3000;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
 /* ── 5. COPILOTO IA DRAWER ──────────────────────────────────────────────── */
 .tool-pill-accent {
   background: linear-gradient(135deg, rgba(124, 92, 255, 0.4), rgba(0, 240, 255, 0.3)) !important;

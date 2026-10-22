@@ -611,8 +611,9 @@ const btnCopilotSubmit = document.getElementById('btn-copilot-submit');
 
 function updateCopilotDiagnostics() {
   if (!copilotDrawer || copilotDrawer.classList.contains('hidden')) return;
+  const numPhrases = (state.phrases || []).length;
   if (diagMedia) diagMedia.textContent = state.hasVideo ? 'Vídeo Pronto' : 'Exemplo';
-  if (diagCaptions) diagCaptions.textContent = `${state.captions.length} Frases`;
+  if (diagCaptions) diagCaptions.textContent = `${numPhrases} Frases`;
   if (diagStyle) diagStyle.textContent = (state.preset || 'Hormozi').toUpperCase();
   const is916 = canvas.height > canvas.width;
   if (diagAspect) diagAspect.textContent = is916 ? '9:16' : '16:9';
@@ -623,7 +624,7 @@ function updateCopilotDiagnostics() {
     } else if (state.anim !== 'pop') {
       copilotTip.innerHTML = '💡 <em>Dica do Copiloto:</em> Suas legendas estão sem efeito de entrada. Ative o <strong>Pop Elástico</strong> para prender a atenção da audiência!';
     } else {
-      copilotTip.innerHTML = `💡 <em>Dica do Copiloto:</em> Projeto otimizado! ${state.captions.length} frases sincronizadas com estilo <strong>${(state.preset || 'Hormozi').toUpperCase()}</strong> e Karaokê ativo.`;
+      copilotTip.innerHTML = `💡 <em>Dica do Copiloto:</em> Projeto otimizado! ${numPhrases} frases sincronizadas com estilo <strong>${(state.preset || 'Hormozi').toUpperCase()}</strong> e Karaokê ativo.`;
     }
   }
 }
