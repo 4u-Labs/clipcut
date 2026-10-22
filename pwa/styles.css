@@ -1185,7 +1185,8 @@ textarea {
 }
 
 .timeline-dock {
-  height: 110px;
+  height: auto;
+  min-height: 124px;
   background: var(--panel);
   border-top: 1px solid var(--border);
   padding: 8px 14px;
@@ -1194,11 +1195,65 @@ textarea {
   gap: 6px;
 }
 
+.timeline-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.timeline-tools-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.timeline-tools-title {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--muted);
+  margin-right: 2px;
+}
+
+.tool-btn-sm {
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s ease;
+}
+
+.tool-btn-sm:hover {
+  background: rgba(0, 240, 255, 0.15);
+  border-color: var(--cyan);
+  color: #fff;
+}
+
+.btn-danger-sm:hover {
+  background: rgba(255, 75, 75, 0.2);
+  border-color: #ff4444;
+  color: #ff6b6b;
+}
+
+.cuts-summary {
+  font-size: 0.72rem;
+  color: var(--cyan);
+  font-weight: 600;
+}
+
 .timeline-track {
   display: flex;
   align-items: center;
   gap: 10px;
-  height: 40px;
+  height: 36px;
 }
 
 .track-label {
@@ -1210,21 +1265,21 @@ textarea {
 
 .track-lane {
   flex: 1;
-  height: 34px;
+  height: 32px;
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 8px;
   display: flex;
   align-items: center;
   padding: 0 6px;
-  gap: 4px;
+  gap: 6px;
   overflow-x: auto;
 }
 
 .clip-pill {
-  padding: 4px 10px;
+  padding: 3px 8px;
   border-radius: 6px;
-  font-size: 0.74rem;
+  font-size: 0.72rem;
   font-weight: 700;
   white-space: nowrap;
   background: rgba(124, 92, 255, 0.25);
@@ -1241,6 +1296,46 @@ textarea {
   width: 100%;
   background: rgba(0, 240, 255, 0.14);
   border-color: var(--cyan);
+}
+
+.video-segment-pill {
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+  background: rgba(0, 240, 255, 0.16);
+  border: 1px solid rgba(0, 240, 255, 0.45);
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+}
+
+.video-segment-pill:hover {
+  background: rgba(0, 240, 255, 0.28);
+}
+
+.video-segment-pill.active {
+  border-color: var(--yellow);
+  box-shadow: 0 0 8px rgba(255, 222, 0, 0.4);
+  background: rgba(255, 222, 0, 0.18);
+}
+
+.video-segment-del {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.75rem;
+  cursor: pointer;
+  padding: 0 2px;
+  line-height: 1;
+}
+
+.video-segment-del:hover {
+  color: #ff4444;
 }
 
 /* ── 4. 4U-LABS TOPBAR, LANGUAGE SWITCH, FOOTER & MODALS ───────────────── */

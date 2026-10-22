@@ -11,7 +11,7 @@
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" type="image/svg+xml" href="icon.svg" />
   <link rel="apple-touch-icon" href="icon.svg" />
-  <link rel="stylesheet" href="styles.css?v=2.6" />
+  <link rel="stylesheet" href="styles.css?v=2.7" />
 </head>
 <body>
 
@@ -602,6 +602,30 @@
     </main>
 
     <footer class="timeline-dock">
+      <div class="timeline-header-bar">
+        <div class="timeline-tools-left">
+          <span class="timeline-tools-title">✂️ <span data-pt="Cortes:" data-en="Cuts:">Cortes:</span></span>
+          <button id="btn-split-video" type="button" class="tool-btn-sm" title="Dividir vídeo na posição atual da agulha (Atalho: S)">
+            ✂️ <span data-pt="Dividir (S)" data-en="Split (S)">Dividir (S)</span>
+          </button>
+          <button id="btn-trim-start" type="button" class="tool-btn-sm" title="Cortar início até a agulha atual">
+            ⏮️ <span data-pt="Cortar Início" data-en="Trim Start">Cortar Início</span>
+          </button>
+          <button id="btn-trim-end" type="button" class="tool-btn-sm" title="Cortar fim a partir da agulha atual">
+            ⏭️ <span data-pt="Cortar Fim" data-en="Trim End">Cortar Fim</span>
+          </button>
+          <button id="btn-delete-segment" type="button" class="tool-btn-sm btn-danger-sm" title="Excluir trecho selecionado (Del)">
+            🗑️ <span data-pt="Excluir Trecho" data-en="Delete Clip">Excluir Trecho</span>
+          </button>
+          <button id="btn-reset-cuts" type="button" class="tool-btn-sm" title="Restaurar vídeo original sem cortes">
+            🔄 <span data-pt="Restaurar" data-en="Reset">Restaurar</span>
+          </button>
+        </div>
+        <div class="timeline-tools-right">
+          <span id="cuts-summary-text" class="cuts-summary">1 trecho ativo</span>
+        </div>
+      </div>
+
       <div class="timeline-track">
         <span class="track-label" data-pt="💬 Legendas" data-en="💬 Captions">💬 Legendas</span>
         <div id="captions-track-lane" class="track-lane"></div>
@@ -816,6 +840,6 @@
   </aside>
 
   <div id="toast" class="toast hidden"></div>
-  <script src="app.js?v=2.6"></script>
+  <script src="app.js?v=2.7"></script>
 </body>
 </html>

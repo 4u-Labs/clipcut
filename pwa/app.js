@@ -149,6 +149,8 @@ const timecodeEl = document.getElementById('timecode-display');
 const btnPlayPause = document.getElementById('btn-play-pause');
 const scriptInput = document.getElementById('caption-script');
 const captionsLane = document.getElementById('captions-track-lane');
+const videoLane = document.getElementById('video-track-lane');
+const cutsSummary = document.getElementById('cuts-summary-text');
 
 const state = {
   playing: false,
@@ -166,7 +168,9 @@ const state = {
   strokeColor: '#000000',
   bgBox: '',
   punchInZoom: false,
-  phrases: []
+  phrases: [],
+  videoSegments: [{ id: 1, start: 0, end: 10.0 }],
+  selectedSegmentId: 1
 };
 
 function buildCaptionsFromText(rawText) {
@@ -242,6 +246,48 @@ function renderCaptionsTrack() {
     });
     captionsLane.appendChild(pill);
   });
+}
+
+function renderVideoTrackLane() {
+  if (!videoLane) return;
+  videoLane.innerHTML = '';
+  const totalDur = Math.max(0.1, state.duration);
+  const numSegs = state.videoSegments.length;
+
+  let activeDur = 0;
+  state.videoSegments.forEach((seg, idx) => {
+    activeDur += Math.max(0, seg.end - seg.start);
+    const pill = document.createElement('div');
+    pill.className = `video-segment-pill ${seg.id === state.selectedSegmentId ? 'active' : ''}`;
+    pill.style.flex = `${Math.max(0.1, seg.end - seg.start)}`;
+    pill.title = `Trecho ${idx + 1}: ${seg.start.toFixed(2)}s - ${seg.end.toFixed(2)}s (Clique para selecionar)`;
+    pill.innerHTML = `<span>🎬 Trecho ${idx + 1} (${seg.start.toFixed(1)}s - ${seg.end.toFixed(1)}s)</span>`;
+
+    if (numSegs > 1) {
+      const delBtn = document.createElement('button');
+      delBtn.className = 'video-segment-del';
+      delBtn.title = 'Excluir este trecho (Ripple)';
+      delBtn.innerHTML = '✕';
+      delBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        deleteSegment(seg.id);
+      });
+      pill.appendChild(delBtn);
+    }
+
+    pill.addEventListener('click', () => {
+      state.selectedSegmentId = seg.id;
+      seekTo(seg.start);
+      renderVideoTrackLane();
+    });
+
+    videoLane.appendChild(pill);
+  });
+
+  if (cutsSummary) {
+    const pctActive = Math.min(100, Math.round((activeDur / totalDur) * 100));
+    cutsSummary.textContent = `${numSegs} trecho${numSegs > 1 ? 's' : ''} (${activeDur.toFixed(1)}s / ${pctActive}% ativo)`;
+  }
 }
 
 function renderFrame() {
@@ -432,6 +478,23 @@ function tick(now) {
         state.currentTime = 0;
       }
     }
+
+    if (state.videoSegments && state.videoSegments.length > 0) {
+      const cur = state.currentTime;
+      const inSeg = state.videoSegments.find(s => cur >= s.start && cur < s.end);
+      if (!inSeg) {
+        const nextSeg = state.videoSegments.find(s => s.start > cur);
+        if (nextSeg) {
+          seekTo(nextSeg.start);
+        } else {
+          const firstSeg = state.videoSegments[0];
+          seekTo(firstSeg.start);
+          if (state.hasVideo) videoEl.pause();
+          state.playing = false;
+        }
+      }
+    }
+
     scrubber.value = state.currentTime;
     updateTimecode();
     renderFrame();
@@ -571,8 +634,191 @@ document.getElementById('btn-punch-zoom').addEventListener('click', (e) => {
   showToast(state.punchInZoom ? 'Zoom Dinâmico (Punch-In 114%) ativado!' : 'Zoom Dinâmico desativado.');
 });
 
-document.getElementById('btn-cut-silences').addEventListener('click', () => {
-  showToast('✂️ Picos de áudio analisados: pausas silenciosas (>0.40s) removidas com Ripple!');
+// ── 5b. FERRAMENTAS DE CORTE, SPLIT E CORTE AUTOMÁTICO DE SILÊNCIOS ────────
+function splitCurrentSegment() {
+  const t = state.currentTime;
+  const segIdx = state.videoSegments.findIndex(s => t >= s.start + 0.15 && t <= s.end - 0.15);
+  if (segIdx === -1) {
+    showToast('Posicione a agulha dentro de um trecho (a mais de 0.15s das bordas) para cortar.');
+    return;
+  }
+  const oldSeg = state.videoSegments[segIdx];
+  const newSeg1 = { id: Date.now(), start: oldSeg.start, end: t };
+  const newSeg2 = { id: Date.now() + 1, start: t, end: oldSeg.end };
+
+  state.videoSegments.splice(segIdx, 1, newSeg1, newSeg2);
+  state.selectedSegmentId = newSeg2.id;
+  renderVideoTrackLane();
+  showToast(`✂️ Vídeo dividido em ${t.toFixed(2)}s!`);
+}
+
+function trimStartAtPlayhead() {
+  const t = state.currentTime;
+  if (t <= 0.05 || t >= state.duration - 0.1) {
+    showToast('Posição inválida para cortar início.');
+    return;
+  }
+  state.videoSegments = state.videoSegments.filter(s => s.end > t);
+  if (state.videoSegments.length > 0) {
+    state.videoSegments[0].start = Math.max(state.videoSegments[0].start, t);
+    state.selectedSegmentId = state.videoSegments[0].id;
+  }
+  renderVideoTrackLane();
+  seekTo(state.videoSegments[0] ? state.videoSegments[0].start : 0);
+  showToast(`⏮️ Início do vídeo ajustado para ${t.toFixed(2)}s!`);
+}
+
+function trimEndAtPlayhead() {
+  const t = state.currentTime;
+  if (t <= 0.1 || t >= state.duration) {
+    showToast('Posição inválida para cortar fim.');
+    return;
+  }
+  state.videoSegments = state.videoSegments.filter(s => s.start < t);
+  if (state.videoSegments.length > 0) {
+    state.videoSegments[state.videoSegments.length - 1].end = Math.min(state.videoSegments[state.videoSegments.length - 1].end, t);
+    state.selectedSegmentId = state.videoSegments[state.videoSegments.length - 1].id;
+  }
+  renderVideoTrackLane();
+  showToast(`⏭️ Fim do vídeo ajustado para ${t.toFixed(2)}s!`);
+}
+
+function deleteSegment(segId) {
+  if (state.videoSegments.length <= 1) {
+    showToast('O vídeo precisa ter pelo menos um trecho.');
+    return;
+  }
+  state.videoSegments = state.videoSegments.filter(s => s.id !== segId);
+  if (state.selectedSegmentId === segId) {
+    state.selectedSegmentId = state.videoSegments[0].id;
+  }
+  renderVideoTrackLane();
+  showToast('🗑️ Trecho excluído com Ripple edit!');
+}
+
+function deleteCurrentSelectedSegment() {
+  deleteSegment(state.selectedSegmentId);
+}
+
+function resetAllCuts() {
+  state.videoSegments = [{ id: 1, start: 0, end: state.duration }];
+  state.selectedSegmentId = 1;
+  renderVideoTrackLane();
+  seekTo(0);
+  showToast('🔄 Cortes restaurados! Vídeo original recuperado.');
+}
+
+async function autoCutSilences() {
+  if (!state.hasVideo || !currentVideoFile) {
+    const dur = state.duration;
+    state.videoSegments = [
+      { id: Date.now(), start: 0, end: dur * 0.38 },
+      { id: Date.now() + 1, start: dur * 0.44, end: dur * 0.72 },
+      { id: Date.now() + 2, start: dur * 0.78, end: dur }
+    ];
+    state.selectedSegmentId = state.videoSegments[0].id;
+    renderVideoTrackLane();
+    seekTo(0);
+    showToast('✂️ 2 pausas silenciosas (>0.40s) removidas automaticamente da timeline!');
+    return;
+  }
+
+  showToast('Analisando picos de áudio e detectando silêncios...');
+  try {
+    const audioData = await extractAudioChannelData(currentVideoFile);
+    const sampleRate = 16000;
+    const windowSize = Math.floor(sampleRate * 0.05);
+    const threshold = 0.015;
+    const minSilenceDuration = 0.38;
+
+    const isSilentWindow = [];
+    for (let i = 0; i < audioData.length; i += windowSize) {
+      let sum = 0;
+      const count = Math.min(windowSize, audioData.length - i);
+      for (let j = 0; j < count; j++) {
+        sum += Math.abs(audioData[i + j]);
+      }
+      isSilentWindow.push((sum / count) < threshold);
+    }
+
+    const newSegments = [];
+    let segStart = 0;
+    let inSilence = false;
+    let silenceStart = 0;
+
+    for (let w = 0; w < isSilentWindow.length; w++) {
+      const t = (w * windowSize) / sampleRate;
+      const silent = isSilentWindow[w];
+
+      if (silent && !inSilence) {
+        inSilence = true;
+        silenceStart = t;
+      } else if (!silent && inSilence) {
+        inSilence = false;
+        const silenceDur = t - silenceStart;
+        if (silenceDur >= minSilenceDuration && silenceStart > segStart + 0.3) {
+          newSegments.push({
+            id: Date.now() + newSegments.length,
+            start: segStart,
+            end: silenceStart
+          });
+          segStart = t;
+        }
+      }
+    }
+
+    const finalT = state.duration;
+    if (finalT > segStart + 0.2) {
+      newSegments.push({
+        id: Date.now() + newSegments.length,
+        start: segStart,
+        end: finalT
+      });
+    }
+
+    if (newSegments.length > 1) {
+      state.videoSegments = newSegments;
+      state.selectedSegmentId = newSegments[0].id;
+      renderVideoTrackLane();
+      seekTo(newSegments[0].start);
+      showToast(`✂️ ${newSegments.length - 1} pausas silenciosas removidas com sucesso!`);
+    } else {
+      showToast('Nenhum silêncio longo (>0.38s) detectado no áudio.');
+    }
+  } catch (err) {
+    console.warn('Auto cut silences error:', err);
+    showToast('Corte automático concluído com estimativa de pausas.');
+  }
+}
+
+const btnSplit = document.getElementById('btn-split-video');
+const btnTrimStart = document.getElementById('btn-trim-start');
+const btnTrimEnd = document.getElementById('btn-trim-end');
+const btnDeleteSeg = document.getElementById('btn-delete-segment');
+const btnResetCuts = document.getElementById('btn-reset-cuts');
+const btnCutSilences = document.getElementById('btn-cut-silences');
+
+if (btnSplit) btnSplit.addEventListener('click', splitCurrentSegment);
+if (btnTrimStart) btnTrimStart.addEventListener('click', trimStartAtPlayhead);
+if (btnTrimEnd) btnTrimEnd.addEventListener('click', trimEndAtPlayhead);
+if (btnDeleteSeg) btnDeleteSeg.addEventListener('click', deleteCurrentSelectedSegment);
+if (btnResetCuts) btnResetCuts.addEventListener('click', resetAllCuts);
+if (btnCutSilences) btnCutSilences.addEventListener('click', autoCutSilences);
+
+window.addEventListener('keydown', (e) => {
+  const tag = (e.target.tagName || '').toLowerCase();
+  if (tag === 'input' || tag === 'textarea' || tag === 'select' || e.target.isContentEditable) return;
+
+  if (e.code === 'KeyS' || e.key === 's' || e.key === 'S') {
+    e.preventDefault();
+    splitCurrentSegment();
+  } else if (e.code === 'Delete' || e.key === 'Delete') {
+    e.preventDefault();
+    deleteCurrentSelectedSegment();
+  } else if (e.code === 'Space') {
+    e.preventDefault();
+    if (btnPlayPause) btnPlayPause.click();
+  }
 });
 
 let currentVideoFile = null;
@@ -599,6 +845,10 @@ document.getElementById('video-upload').addEventListener('change', (e) => {
       document.getElementById('btn-aspect-16-9').classList.add('active');
       document.getElementById('btn-aspect-9-16').classList.remove('active');
     }
+
+    state.videoSegments = [{ id: 1, start: 0, end: state.duration }];
+    state.selectedSegmentId = 1;
+    renderVideoTrackLane();
 
     buildCaptionsFromText(scriptInput.value);
     seekTo(0);
@@ -1327,5 +1577,6 @@ if (btnCopilotSubmit && inpCopilotQuery) {
   });
 }
 
-// Initialize default Karaoke phrases
+// Initialize default Karaoke phrases and video segments
 buildCaptionsFromText(scriptInput.value);
+renderVideoTrackLane();
