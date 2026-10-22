@@ -1,4 +1,4 @@
-const CACHE_NAME = 'clipcut-pwa-v1.0.0';
+const CACHE_NAME = 'clipcut-pwa-v2.0.0';
 const ASSETS = [
   './',
   './index.html',

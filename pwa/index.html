@@ -3,97 +3,376 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <meta name="theme-color" content="#0D0F14" />
+  <meta name="theme-color" content="#0B0D13" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="ClipCut" />
-  <title>ClipCut Studio — Editor de Vídeo & Legendas Karaokê (4u-Labs)</title>
+  <title>ClipCut Studio — Editor de Vídeo & Legendas Karaokê IA (4u-Labs)</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" type="image/svg+xml" href="icon.svg" />
   <link rel="apple-touch-icon" href="icon.svg" />
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css?v=2.0" />
 </head>
 <body>
+
   <!-- ═══════════════════════════════════════════════════════════════════════
-       1. TELA DE INSTALAÇÃO OBRIGATÓRIA (INSTALL GATE + DOWNLOADS NATIVOS)
+       1. LANDING PAGE OFICIAL DO CLIPCUT STUDIO
        ═══════════════════════════════════════════════════════════════════════ -->
-  <div id="install-gate" class="install-gate">
-    <div class="gate-card">
-      <div class="gate-topbar">
-        <button id="btn-open-4ulabs-gate" class="pill-btn" type="button">
-          🌐 <span data-pt="4u-Labs: Aplicativos, suporte e comunidade" data-en="4u-Labs: Apps, support and community">4u-Labs: Aplicativos, suporte e comunidade</span>
+  <div id="landing-page" class="landing-page">
+    <!-- Barra de Navegação Fixa -->
+    <header class="lp-navbar">
+      <div class="lp-container lp-nav-inner">
+        <a href="#" class="lp-brand">
+          <img src="icon.svg" alt="ClipCut Logo" class="lp-brand-logo" />
+          <div>
+            <strong>ClipCut Studio</strong>
+            <span class="lp-brand-badge">CapCut Edition</span>
+          </div>
+        </a>
+
+        <nav class="lp-nav-links">
+          <a href="#recursos" data-pt="Recursos" data-en="Features">Recursos</a>
+          <a href="#presets" data-pt="Presets CapCut" data-en="CapCut Presets">Presets CapCut</a>
+          <a href="#ia-local" data-pt="IA & Retenção" data-en="AI & Retention">IA &amp; Retenção</a>
+          <a href="#plataformas" data-pt="Plataformas" data-en="Platforms">Plataformas</a>
+        </nav>
+
+        <div class="lp-nav-actions">
+          <button id="btn-open-4ulabs-gate" class="pill-btn" type="button">
+            🌐 <span data-pt="4u-Labs" data-en="4u-Labs">4u-Labs</span>
+          </button>
+          <div class="lang-switch">
+            <button type="button" class="lang-btn active" data-set-lang="pt">🇧🇷 PT</button>
+            <button type="button" class="lang-btn" data-set-lang="en">🇺🇸 EN</button>
+          </div>
+          <button type="button" class="btn-cta-nav js-open-download-modal">
+            ⬇️ <span data-pt="Baixar / Instalar" data-en="Download / Install">Baixar / Instalar</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="lp-hero">
+      <div class="lp-container lp-hero-grid">
+        <div class="lp-hero-copy">
+          <div class="lp-eyebrow">
+            <span class="lp-dot"></span>
+            <span data-pt="100% Local & Gratuito · Motor Rust + FFmpeg + Whisper IA"
+                  data-en="100% Local & Free · Rust + FFmpeg + Whisper AI Engine">
+              100% Local &amp; Gratuito · Motor Rust + FFmpeg + Whisper IA
+            </span>
+          </div>
+
+          <h1 data-pt="Edição de Vídeo e Legendas Karaokê Palavra por Palavra no Ritmo da Voz."
+              data-en="Video Editing & Word-by-Word Karaoke Captions Synced to Your Voice.">
+            Edição de Vídeo e Legendas Karaokê Palavra por Palavra no Ritmo da Voz.
+          </h1>
+
+          <p class="lp-hero-lead"
+             data-pt="A alternativa leve, privada e multiplataforma ao CapCut desenvolvida pela 4u-Labs. Gere legendas dinâmicas com IA offline onde apenas a palavra falada muda de cor, corte silêncios em 1 clique e crie vídeos verticais 9:16 sem marca d'água."
+             data-en="The lightweight, private, multiplatform CapCut alternative built by 4u-Labs. Generate dynamic offline AI captions where only the spoken word changes color, remove silences in 1 click, and create 9:16 vertical videos with zero watermarks.">
+            A alternativa leve, privada e multiplataforma ao CapCut desenvolvida pela <strong>4u-Labs</strong>. Gere legendas dinâmicas com IA offline onde apenas a palavra falada muda de cor, corte silêncios em 1 clique e crie vídeos verticais 9:16 sem marca d'água.
+          </p>
+
+          <div class="lp-hero-buttons">
+            <button type="button" class="btn-hero-primary js-open-download-modal">
+              ⬇️ <span data-pt="Baixar / Escolher Plataforma" data-en="Download / Choose Platform">Baixar / Escolher Plataforma</span>
+            </button>
+            <button type="button" id="btn-hero-try-web" class="btn-hero-secondary">
+              🎬 <span data-pt="Abrir Estúdio Web (PWA)" data-en="Open Web Studio (PWA)">Abrir Estúdio Web (PWA)</span>
+            </button>
+          </div>
+
+          <div class="lp-hero-chips">
+            <span>✓ <b data-pt="Zero Marca D'água" data-en="Zero Watermarks">Zero Marca D'água</b></span>
+            <span>✓ <b data-pt="Whisper.cpp Offline" data-en="Offline Whisper.cpp">Whisper.cpp Offline</b></span>
+            <span>✓ <b>PWA · Linux · Windows · Mac · Android · iOS</b></span>
+          </div>
+        </div>
+
+        <!-- Demonstração Visual Ao Vivo no Hero -->
+        <div class="lp-hero-showcase">
+          <div class="showcase-window">
+            <div class="showcase-titlebar">
+              <div class="showcase-dots"><span></span><span></span><span></span></div>
+              <span class="showcase-title">ClipCut Studio — Preview Karaokê IA</span>
+              <span class="showcase-tag">60 FPS</span>
+            </div>
+            <div class="showcase-stage">
+              <div class="showcase-speaker-avatar">🎙️</div>
+              <div class="showcase-waveform">
+                <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+              </div>
+              <!-- Legenda Karaokê Animada em Tempo Real -->
+              <div class="showcase-caption-box" id="hero-demo-caption">
+                <span class="demo-word" data-idx="0">CADA</span>
+                <span class="demo-word active" data-idx="1">PALAVRA</span>
+                <span class="demo-word" data-idx="2">BRILHA</span>
+                <span class="demo-word" data-idx="3">NA</span>
+                <span class="demo-word" data-idx="4">FALA!</span>
+              </div>
+            </div>
+            <div class="showcase-timeline">
+              <div class="tl-row tl-captions">
+                <span>💬 Karaokê</span>
+                <div class="tl-blocks">
+                  <i>*CADA* PALAVRA...</i>
+                  <i class="active">CADA *PALAVRA*...</i>
+                  <i>CADA PALAVRA *BRILHA*...</i>
+                </div>
+              </div>
+              <div class="tl-row tl-video">
+                <span>🎞️ Vídeo 9:16</span>
+                <div class="tl-video-bar">✂️ Silêncios Cortados · 🎯 Punch-In Zoom 114%</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Seção de Recursos Principais -->
+    <section id="recursos" class="lp-section">
+      <div class="lp-container">
+        <div class="lp-section-header">
+          <span class="lp-section-tag" data-pt="RECURSOS ESTILO CAPCUT" data-en="CAPCUT-STYLE FEATURES">RECURSOS ESTILO CAPCUT</span>
+          <h2 data-pt="Tudo o que você precisa para vídeos virais e profissionais"
+              data-en="Everything you need for viral and professional videos">
+            Tudo o que você precisa para vídeos virais e profissionais
+          </h2>
+          <p data-pt="Projetado para criadores de conteúdo, educadores e editores que buscam velocidade máxima sem depender de nuvem."
+             data-en="Designed for content creators, educators and editors who demand maximum speed without relying on the cloud.">
+            Projetado para criadores de conteúdo, educadores e editores que buscam velocidade máxima sem depender de nuvem.
+          </p>
+        </div>
+
+        <div class="lp-features-grid">
+          <article class="lp-feature-card">
+            <div class="feat-icon">🎤</div>
+            <h3 data-pt="Karaokê Palavra por Palavra Real" data-en="True Word-by-Word Karaoke">Karaokê Palavra por Palavra Real</h3>
+            <p data-pt="A frase de 3 a 4 palavras permanece fixa e estável em branco com contorno preto, enquanto apenas a palavra falada no exato milissegundo muda para amarelo vibrante (#FFDE00) ou verde neon (#00FF88)."
+               data-en="Each 3–4 word phrase stays steady on screen in crisp white with a black outline, while only the currently spoken word turns vibrant yellow (#FFDE00) or neon green (#00FF88).">
+              A frase de 3 a 4 palavras permanece fixa e estável em branco com contorno preto, enquanto <strong>apenas a palavra falada no exato milissegundo</strong> muda para amarelo vibrante (<code>#FFDE00</code>) ou verde neon (<code>#00FF88</code>).
+            </p>
+          </article>
+
+          <article class="lp-feature-card">
+            <div class="feat-icon">✂️</div>
+            <h3 data-pt="Corte Automático de Silêncios" data-en="Auto Silence Cutter">Corte Automático de Silêncios</h3>
+            <p data-pt="Analisa 1.000 amostras de áudio por segundo, detecta pausas abaixo de -32 dB maiores que 0,40s, preserva 60ms de respiração natural e remove os silêncios fechando os espaços magneticamente (Ripple Delete)."
+               data-en="Scans 1,000 audio samples per second, detects pauses below -32 dB longer than 0.40s, preserves 60ms of natural breath, and ripple-deletes all dead air automatically.">
+              Analisa 1.000 amostras de áudio por segundo, detecta pausas abaixo de <code>-32 dB</code> maiores que <code>0,40s</code>, preserva <code>60ms</code> de respiração natural e remove os silêncios fechando os espaços magneticamente (<em>Ripple Delete</em>).
+            </p>
+          </article>
+
+          <article class="lp-feature-card">
+            <div class="feat-icon">🎯</div>
+            <h3 data-pt="Zoom Dinâmico (Punch-In)" data-en="Dynamic Punch-In Zoom">Zoom Dinâmico (Punch-In)</h3>
+            <p data-pt="Aumente a retenção da audiência com 1 clique: o ClipCut cria keyframes automáticos alternando suavemente a escala entre 100% e 114% ao longo do vídeo."
+               data-en="Boost viewer retention in 1 click: ClipCut automatically keyframes smooth scale transitions alternating between 100% and 114% across your video.">
+              Aumente a retenção da audiência com 1 clique: o ClipCut cria keyframes automáticos alternando suavemente a escala entre <code>100%</code> e <code>114%</code> ao longo do vídeo.
+            </p>
+          </article>
+
+          <article class="lp-feature-card">
+            <div class="feat-icon">📱</div>
+            <h3 data-pt="Formato Vertical 9:16 em 1 Clique" data-en="1-Click 9:16 Vertical Format">Formato Vertical 9:16 em 1 Clique</h3>
+            <p data-pt="Converte a timeline instantaneamente para 1080×1920 (Reels, TikTok e Shorts) e aplica enquadramento inteligente Fill em todos os clipes de vídeo e imagem."
+               data-en="Instantly converts your timeline to 1080×1920 (Reels, TikTok & Shorts) and applies smart Fill framing across all video and image clips.">
+              Converte a timeline instantaneamente para <code>1080×1920</code> (Reels, TikTok e Shorts) e aplica enquadramento inteligente <em>Fill</em> em todos os clipes de vídeo e imagem.
+            </p>
+          </article>
+
+          <article class="lp-feature-card">
+            <div class="feat-icon">✨</div>
+            <h3 data-pt="Animação Pop Elástico" data-en="Elastic Pop Animation">Animação Pop Elástico</h3>
+            <p data-pt="Aplica física de mola (76% → 108% → 100%) na entrada de cada nova frase de legenda sem fazer a frase pular durante a troca das palavras do Karaokê."
+               data-en="Applies spring physics (76% → 108% → 100%) at the entrance of each new caption phrase without making the phrase jump during word-by-word Karaoke highlights.">
+              Aplica física de mola (<code>76% → 108% → 100%</code>) na entrada de cada nova frase de legenda sem fazer a frase pular durante a troca das palavras do Karaokê.
+            </p>
+          </article>
+
+          <article class="lp-feature-card">
+            <div class="feat-icon">🔒</div>
+            <h3 data-pt="IA 100% Local & Importação/Exportação .SRT" data-en="100% Local AI & .SRT Import/Export">IA 100% Local &amp; Importação/Exportação .SRT</h3>
+            <p data-pt="Transcrição automática por voz via Whisper.cpp direto na sua CPU/GPU, além de importação e exportação instantânea de legendas no padrão SubRip (.SRT)."
+               data-en="Automatic voice transcription via Whisper.cpp right on your CPU/GPU, plus instant import and export of industry-standard SubRip (.SRT) subtitles.">
+              Transcrição automática por voz via <strong>Whisper.cpp</strong> direto na sua CPU/GPU, além de importação e exportação instantânea de legendas no padrão SubRip (<code>.SRT</code>).
+            </p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Seção de Presets Visuais CapCut -->
+    <section id="presets" class="lp-section lp-section-alt">
+      <div class="lp-container">
+        <div class="lp-section-header">
+          <span class="lp-section-tag" data-pt="ESTILOS INSTANTÂNEOS" data-en="INSTANT STYLES">ESTILOS INSTANTÂNEOS</span>
+          <h2 data-pt="Presets Visuais CapCut em 1 Clique" data-en="1-Click CapCut Visual Presets">Presets Visuais CapCut em 1 Clique</h2>
+          <p data-pt="Aplique a todas as legendas do projeto simultaneamente com um único botão no painel de Texto."
+             data-en="Apply to all captions in your project simultaneously with a single button in the Text panel.">
+            Aplique a todas as legendas do projeto simultaneamente com um único botão no painel de Texto.
+          </p>
+        </div>
+
+        <div class="lp-presets-showcase">
+          <div class="lp-preset-card">
+            <div class="lp-preset-preview preview-hormozi">
+              <span>ESTILO <b>HORMOZI</b> PRO</span>
+            </div>
+            <h4>Hormozi</h4>
+            <p data-pt="Texto branco puro em negrito pesado, contorno preto espesso, sombra projetada e palavra falada em amarelo vibrante."
+               data-en="Pure white heavy bold text, thick black stroke, drop shadow and vibrant yellow spoken word.">
+              Texto branco puro em negrito pesado, contorno preto espesso, sombra projetada e palavra falada em amarelo vibrante.
+            </p>
+          </div>
+
+          <div class="lp-preset-card">
+            <div class="lp-preset-preview preview-tiktok">
+              <span>CAIXA <b>TIKTOK</b> BOX</span>
+            </div>
+            <h4>TikTok Box</h4>
+            <p data-pt="Fundo escuro semitransparente com cantos arredondados para leitura perfeita sobre vídeos claros."
+               data-en="Rounded semi-transparent dark pill background for effortless reading over bright videos.">
+              Fundo escuro semitransparente com cantos arredondados para leitura perfeita sobre vídeos claros.
+            </p>
+          </div>
+
+          <div class="lp-preset-card">
+            <div class="lp-preset-preview preview-yellow">
+              <span>AMARELO <b>POP</b> NEON</span>
+            </div>
+            <h4>Amarelo Pop</h4>
+            <p data-pt="Frase base em amarelo clássico de cinema com destaque automático da palavra falada em verde neon (#00FF88)."
+               data-en="Classic cinema yellow base phrase with automatic neon green (#00FF88) spoken-word highlight.">
+              Frase base em amarelo clássico de cinema com destaque automático da palavra falada em verde neon (<code>#00FF88</code>).
+            </p>
+          </div>
+
+          <div class="lp-preset-card">
+            <div class="lp-preset-preview preview-neon">
+              <span>VISUAL <b>NEON</b> CLEAN</span>
+            </div>
+            <h4>Neon Clean</h4>
+            <p data-pt="Tipografia ciano brilhante (#00F0FF) com contorno azul-noturno profundo e palavra ativa em amarelo solar."
+               data-en="Bright cyan typography (#00F0FF) with deep midnight-blue outline and solar yellow active word.">
+              Tipografia ciano brilhante (<code>#00F0FF</code>) com contorno azul-noturno profundo e palavra ativa em amarelo solar.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Seção de Chamada para Download Multiplataforma -->
+    <section id="plataformas" class="lp-section lp-cta-banner">
+      <div class="lp-container lp-cta-box">
+        <div>
+          <span class="lp-section-tag" data-pt="MULTIPLATAFORMA OFICIAL" data-en="OFFICIAL MULTIPLATFORM">MULTIPLATAFORMA OFICIAL</span>
+          <h2 data-pt="Pronto para editar no seu Computador, Tablet ou Celular?"
+              data-en="Ready to edit on your Computer, Tablet or Phone?">
+            Pronto para editar no seu Computador, Tablet ou Celular?
+          </h2>
+          <p data-pt="Escolha a versão ideal para o seu dispositivo: WebApp PWA instalável (Tablets/iPad/Chromebook) ou instaladores nativos para Linux, Windows, macOS, Android e iOS."
+             data-en="Choose the ideal version for your device: installable PWA WebApp (Tablets/iPad/Chromebook) or native installers for Linux, Windows, macOS, Android and iOS.">
+            Escolha a versão ideal para o seu dispositivo: <strong>WebApp PWA instalável</strong> (Tablets/iPad/Chromebook) ou instaladores nativos para <strong>Linux, Windows, macOS, Android e iOS</strong>.
+          </p>
+        </div>
+        <button type="button" class="btn-hero-primary js-open-download-modal">
+          ⬇️ <span data-pt="Baixar ClipCut Agora" data-en="Download ClipCut Now">Baixar ClipCut Agora</span>
         </button>
-        <div class="lang-switch">
-          <button type="button" class="lang-btn active" data-set-lang="pt">🇧🇷 PT</button>
-          <button type="button" class="lang-btn" data-set-lang="en">🇺🇸 EN</button>
-        </div>
       </div>
+    </section>
 
-      <div class="gate-header">
-        <img src="icon.svg" alt="ClipCut Logo" class="gate-logo" />
+    <!-- Rodapé Oficial com os 14 Links da 4u-Labs + PayPal -->
+    <footer class="lp-footer">
+      <div class="lp-container">
+        <div class="footer-links-row">
+          <a href="https://4u.ia.br/" target="_blank" rel="noopener noreferrer">Portal 4U</a>
+          <a href="https://4u.ia.br/loja/index.php" target="_blank" rel="noopener noreferrer" data-pt="Loja de Apps" data-en="App Store">Loja de Apps</a>
+          <a href="https://4u.ia.br/suporte.html" target="_blank" rel="noopener noreferrer" data-pt="Central de Ajuda" data-en="Help Center">Central de Ajuda</a>
+          <a href="https://4u.ia.br/sobre.html" target="_blank" rel="noopener noreferrer" data-pt="Sobre 4U" data-en="About 4U">Sobre 4U</a>
+          <a href="https://4u.ia.br/termos.html" target="_blank" rel="noopener noreferrer" data-pt="Termos" data-en="Terms">Termos</a>
+          <a href="https://4u.ia.br/politica.html" target="_blank" rel="noopener noreferrer" data-pt="Privacidade" data-en="Privacy">Privacidade</a>
+          <a href="https://github.com/4u-Labs" target="_blank" rel="noopener noreferrer">GitHub</a>
+          <a href="https://4u-labs.github.io/" target="_blank" rel="noopener noreferrer">Blog Dev</a>
+          <a href="https://alternativeto.net/user/4u-ia-br/added/" target="_blank" rel="noopener noreferrer">AlternativeTo</a>
+          <a href="https://www.youtube.com/@fbr4g4" target="_blank" rel="noopener noreferrer">YouTube</a>
+          <a href="https://www.instagram.com/fbr4g4/" target="_blank" rel="noopener noreferrer">Instagram</a>
+          <a href="https://www.facebook.com/fbr4g4/" target="_blank" rel="noopener noreferrer">Facebook</a>
+          <a href="https://x.com/fbr4g4" target="_blank" rel="noopener noreferrer">X / Twitter</a>
+          <a href="https://www.linkedin.com/in/fbr4g4/" target="_blank" rel="noopener noreferrer">LinkedIn</a>
+          <a href="https://www.paypal.com/ncp/payment/L7YRCS984T33N" target="_blank" rel="noopener noreferrer" class="paypal-pill">
+            ☕ <span data-pt="Apoiar com PayPal" data-en="Support on PayPal">Apoiar com PayPal</span>
+          </a>
+        </div>
+        <p class="lp-copyright">
+          © 2026 <strong>4U.IA.BR / 4u-Labs</strong> — Fabiano Braga.
+        </p>
+      </div>
+    </footer>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       2. MODAL DE DOWNLOAD / ESCOLHA DE PLATAFORMA (ABRE AO CLICAR EM BAIXAR)
+       ═══════════════════════════════════════════════════════════════════════ -->
+  <div id="modal-download" class="modal-backdrop hidden">
+    <div class="modal-card modal-download-card">
+      <div class="modal-header">
         <div>
-          <span class="gate-badge" data-pt="4u-Labs · Multiplataforma Oficial" data-en="4u-Labs · Official Multiplatform">4u-Labs · Multiplataforma Oficial</span>
-          <h1>ClipCut Studio</h1>
-          <p class="gate-subtitle"
-             data-pt="Editor de vídeo com Legendas Karaokê Palavra por Palavra, Corte de Silêncios e Presets CapCut."
-             data-en="Video editor with Word-by-Word Karaoke Captions, Auto Silence Cutter and CapCut Presets.">
-            Editor de vídeo com Legendas Karaokê Palavra por Palavra, Corte de Silêncios e Presets CapCut.
+          <span class="gate-badge" data-pt="Download & Instalação Oficial" data-en="Official Download & Installation">Download &amp; Instalação Oficial</span>
+          <h3 class="modal-title-lg" data-pt="Escolha a versão do ClipCut para o seu dispositivo"
+              data-en="Choose the ClipCut version for your device">
+            Escolha a versão do ClipCut para o seu dispositivo
+          </h3>
+          <p class="modal-sub"
+             data-pt="Instale como WebApp PWA (ideal para Tablets/iPad) ou baixe o instalador nativo para o seu sistema operacional."
+             data-en="Install as a PWA WebApp (ideal for Tablets/iPad) or download the native installer for your operating system.">
+            Instale como WebApp PWA (ideal para Tablets/iPad) ou baixe o instalador nativo para o seu sistema operacional.
           </p>
         </div>
+        <button id="btn-close-download" class="modal-close" type="button">✕</button>
       </div>
 
-      <div class="gate-alert">
-        <div class="gate-alert-icon">📲</div>
-        <div>
-          <strong data-pt="Este aplicativo funciona de forma instalada no seu dispositivo"
-                  data-en="This application is designed to run installed on your device">
-            Este aplicativo funciona de forma instalada no seu dispositivo
-          </strong>
-          <p data-pt="Para garantir desempenho máximo, aceleração de vídeo local e funcionamento 100% offline sem enviar seus vídeos para servidores externos, instale o WebApp PWA (ideal para Tablets, iPad e Chromebook) ou baixe o instalador nativo do seu sistema abaixo."
-             data-en="To ensure maximum performance, local video acceleration and 100% offline privacy without uploading your videos to external servers, install the PWA WebApp (ideal for Tablets, iPads and Chromebooks) or download the native installer for your OS below.">
-            Para garantir desempenho máximo, aceleração de vídeo local e funcionamento 100% offline sem enviar seus vídeos para servidores externos, instale o <strong>WebApp PWA</strong> (ideal para Tablets, iPad e Chromebook) ou baixe o instalador nativo do seu sistema abaixo.
-          </p>
-        </div>
-      </div>
-
-      <!-- Destaque Principal: Instalar WebApp PWA -->
+      <!-- Opção 1 em Destaque: WebApp PWA (Tablets / iPad / Chromebook / Navegador) -->
       <div class="pwa-install-box">
         <div class="pwa-install-info">
           <h3>
-            ✨ <span data-pt="WebApp Instalável (PWA)" data-en="Installable WebApp (PWA)">WebApp Instalável (PWA)</span>
-            <span class="tag-recommended" data-pt="Recomendado para Tablets / iPad / Chromebook" data-en="Recommended for Tablets / iPad / Chromebook">Recomendado para Tablets / iPad / Chromebook</span>
+            🌐 <span data-pt="WebApp Instalável (PWA)" data-en="Installable WebApp (PWA)">WebApp Instalável (PWA)</span>
+            <span class="tag-recommended" data-pt="Tablets · iPad · Chromebook · Web" data-en="Tablets · iPad · Chromebook · Web">Tablets · iPad · Chromebook · Web</span>
           </h3>
-          <p data-pt="Instala em 1 segundo direto na tela inicial, abre em janela dedicada sem barra de navegador e roda 100% local."
-             data-en="Installs in 1 second right on your home screen, opens in a standalone window without browser bars and runs 100% locally.">
-            Instala em 1 segundo direto na tela inicial, abre em janela dedicada sem barra de navegador e roda 100% local.
+          <p data-pt="Instala em 1 segundo na tela inicial, abre em janela dedicada em tela cheia e funciona 100% offline."
+             data-en="Installs in 1 second on your home screen, opens in a dedicated fullscreen window and works 100% offline.">
+            Instala em 1 segundo na tela inicial, abre em janela dedicada em tela cheia e funciona 100% offline.
           </p>
           <p id="ios-safari-hint" class="ios-hint hidden"
-             data-pt="No iPad / iPhone (Safari): toque no ícone Compartilhar (⬆️) na barra do Safari e escolha 'Adicionar à Tela de Início'."
-             data-en="On iPad / iPhone (Safari): tap the Share icon (⬆️) in the Safari bar and choose 'Add to Home Screen'.">
-            No iPad / iPhone (Safari): toque no ícone <strong>Compartilhar (⬆️)</strong> na barra do Safari e escolha <strong>"Adicionar à Tela de Início"</strong>.
+             data-pt="No iPad / iPhone (Safari): toque em Compartilhar (⬆️) e escolha 'Adicionar à Tela de Início'."
+             data-en="On iPad / iPhone (Safari): tap Share (⬆️) and choose 'Add to Home Screen'.">
+            No iPad / iPhone (Safari): toque em <strong>Compartilhar (⬆️)</strong> e escolha <strong>"Adicionar à Tela de Início"</strong>.
           </p>
         </div>
         <div class="pwa-install-actions">
-          <button id="btn-install-pwa" class="btn-primary-xl">
-            📲 <span data-pt="Instalar WebApp Agora" data-en="Install WebApp Now">Instalar WebApp Agora</span>
+          <button id="btn-install-pwa" type="button" class="btn-primary-xl">
+            📲 <span data-pt="Instalar WebApp (PWA)" data-en="Install WebApp (PWA)">Instalar WebApp (PWA)</span>
           </button>
-          <button id="btn-enter-pwa" class="btn-ghost-sm">
-            <span data-pt="Já instalei / Abrir Estúdio WebApp →" data-en="Already installed / Open WebApp Studio →">Já instalei / Abrir Estúdio WebApp →</span>
+          <button id="btn-enter-pwa" type="button" class="btn-ghost-sm">
+            🎬 <span data-pt="Abrir Estúdio no Navegador →" data-en="Open Studio in Browser →">Abrir Estúdio no Navegador →</span>
           </button>
         </div>
       </div>
 
-      <!-- Grade das 6 Plataformas: Linux, Windows, macOS, Android, iOS, PWA -->
+      <!-- Grade das Plataformas Nativas -->
       <div class="platforms-section">
-        <h4 data-pt="Ou baixe o Aplicativo Nativo para sua plataforma (Motor Rust + FFmpeg + Whisper):"
-            data-en="Or download the Native Application for your platform (Rust + FFmpeg + Whisper Engine):">
-          Ou baixe o Aplicativo Nativo para sua plataforma (Motor Rust + FFmpeg + Whisper):
+        <h4 data-pt="Instaladores Nativos (Motor Rust + FFmpeg + Whisper IA Offline):"
+            data-en="Native Installers (Rust + FFmpeg + Offline Whisper AI Engine):">
+          Instaladores Nativos (Motor Rust + FFmpeg + Whisper IA Offline):
         </h4>
         <div class="platforms-grid">
           <a href="https://github.com/4u-Labs/clipcut/releases/latest" target="_blank" rel="noopener" class="platform-card" data-os="linux">
             <span class="plat-icon">🐧</span>
             <div class="plat-meta">
-              <strong>Linux (64-bit)</strong>
+              <strong>Linux (x86_64 &amp; ARM64)</strong>
               <span>Ubuntu, Zorin OS, Debian (.deb / .AppImage)</span>
             </div>
             <span class="plat-dl" data-pt="Baixar" data-en="Download">Baixar</span>
@@ -102,8 +381,8 @@
           <a href="https://github.com/4u-Labs/clipcut/releases/latest" target="_blank" rel="noopener" class="platform-card" data-os="windows">
             <span class="plat-icon">🪟</span>
             <div class="plat-meta">
-              <strong>Windows 10 / 11</strong>
-              <span data-pt="Instalador .exe e pacote .msi (x64)" data-en=".exe Installer and .msi package (x64)">Instalador .exe e pacote .msi (x64)</span>
+              <strong>Windows 10 / 11 (64-bit)</strong>
+              <span data-pt="Instalador .exe e pacote .msi" data-en=".exe Installer and .msi package">Instalador .exe e pacote .msi</span>
             </div>
             <span class="plat-dl" data-pt="Baixar" data-en="Download">Baixar</span>
           </a>
@@ -114,7 +393,7 @@
               <strong>macOS</strong>
               <span>Apple Silicon (M1–M4) &amp; Intel (.dmg)</span>
             </div>
-            <span class="plat-dl" data-pt="Baixar" data-en="Download">Baixar</span>
+            <span class="plat-dl" data-pt="Baixar .DMG" data-en="Download .DMG">Baixar .DMG</span>
           </a>
 
           <a href="https://github.com/4u-Labs/clipcut/releases/latest" target="_blank" rel="noopener" class="platform-card" data-os="android">
@@ -138,46 +417,23 @@
           <button id="btn-card-pwa" type="button" class="platform-card platform-card-btn" data-os="pwa">
             <span class="plat-icon">🌐</span>
             <div class="plat-meta">
-              <strong>WebApp PWA</strong>
-              <span data-pt="Tablets, iPad, Chromebook e Qualquer SO" data-en="Tablets, iPad, Chromebook & Any OS">Tablets, iPad, Chromebook e Qualquer SO</span>
+              <strong>WebApp Estúdio</strong>
+              <span data-pt="Abrir agora ou instalar no Tablet/PC" data-en="Open now or install on Tablet/PC">Abrir agora ou instalar no Tablet/PC</span>
             </div>
-            <span class="plat-dl" data-pt="Instalar" data-en="Install">Instalar</span>
+            <span class="plat-dl" data-pt="Abrir" data-en="Open">Abrir</span>
           </button>
         </div>
       </div>
-
-      <!-- Rodapé Oficial com os 14 Links do Ecossistema 4u-Labs + PayPal -->
-      <footer class="gate-footer">
-        <div class="footer-links-row">
-          <a href="https://4u.ia.br/" target="_blank" rel="noopener noreferrer">Portal 4U</a>
-          <a href="https://4u.ia.br/loja/index.php" target="_blank" rel="noopener noreferrer" data-pt="Loja de Apps" data-en="App Store">Loja de Apps</a>
-          <a href="https://4u.ia.br/suporte.html" target="_blank" rel="noopener noreferrer" data-pt="Central de Ajuda" data-en="Help Center">Central de Ajuda</a>
-          <a href="https://4u.ia.br/sobre.html" target="_blank" rel="noopener noreferrer" data-pt="Sobre 4U" data-en="About 4U">Sobre 4U</a>
-          <a href="https://4u.ia.br/termos.html" target="_blank" rel="noopener noreferrer" data-pt="Termos" data-en="Terms">Termos</a>
-          <a href="https://4u.ia.br/politica.html" target="_blank" rel="noopener noreferrer" data-pt="Privacidade" data-en="Privacy">Privacidade</a>
-          <a href="https://github.com/4u-Labs" target="_blank" rel="noopener noreferrer">GitHub</a>
-          <a href="https://4u-labs.github.io/" target="_blank" rel="noopener noreferrer">Blog Dev</a>
-          <a href="https://alternativeto.net/user/4u-ia-br/added/" target="_blank" rel="noopener noreferrer">AlternativeTo</a>
-          <a href="https://www.youtube.com/@fbr4g4" target="_blank" rel="noopener noreferrer">YouTube</a>
-          <a href="https://www.instagram.com/fbr4g4/" target="_blank" rel="noopener noreferrer">Instagram</a>
-          <a href="https://www.facebook.com/fbr4g4/" target="_blank" rel="noopener noreferrer">Facebook</a>
-          <a href="https://x.com/fbr4g4" target="_blank" rel="noopener noreferrer">X / Twitter</a>
-          <a href="https://www.linkedin.com/in/fbr4g4/" target="_blank" rel="noopener noreferrer">LinkedIn</a>
-          <a href="https://www.paypal.com/ncp/payment/L7YRCS984T33N" target="_blank" rel="noopener noreferrer" class="paypal-pill">
-            ☕ <span data-pt="Apoiar com PayPal" data-en="Support on PayPal">Apoiar com PayPal</span>
-          </a>
-        </div>
-      </footer>
     </div>
   </div>
 
   <!-- ═══════════════════════════════════════════════════════════════════════
-       2. ESTÚDIO CLIPCUT PWA (INTERFACE COMPLETA ESTILO CAPCUT)
+       3. ESTÚDIO CLIPCUT PWA (INTERFACE COMPLETA ESTILO CAPCUT)
        ═══════════════════════════════════════════════════════════════════════ -->
   <div id="studio-app" class="studio-app hidden">
-    <!-- Barra Superior -->
     <header class="topbar">
       <div class="topbar-left">
+        <button id="btn-back-landing" class="tool-pill" type="button" title="Voltar à página inicial">← <span data-pt="Início" data-en="Home">Início</span></button>
         <img src="icon.svg" alt="ClipCut" class="topbar-logo" />
         <strong>ClipCut</strong>
         <span class="topbar-tag">CapCut Edition</span>
@@ -194,14 +450,12 @@
           <button type="button" class="lang-btn active" data-set-lang="pt">PT</button>
           <button type="button" class="lang-btn" data-set-lang="en">EN</button>
         </div>
-        <button id="btn-open-downloads" class="btn-secondary-sm">⬇ <span data-pt="Apps Nativos" data-en="Native Apps">Apps Nativos</span></button>
+        <button id="btn-open-downloads" class="btn-secondary-sm js-open-download-modal">⬇ <span data-pt="Baixar App" data-en="Download App">Baixar App</span></button>
         <button id="btn-export-video" class="btn-primary-sm">🎬 <span data-pt="Exportar Vídeo" data-en="Export Video">Exportar Vídeo</span></button>
       </div>
     </header>
 
-    <!-- Área Principal: Biblioteca + Monitor Canvas + Inspetor CapCut -->
     <main class="workspace">
-      <!-- Painel Esquerdo: Mídia & Legendas Automáticas -->
       <aside class="panel panel-left">
         <div class="panel-section">
           <h3 data-pt="1. Mídia do Projeto" data-en="1. Project Media">1. Mídia do Projeto</h3>
@@ -226,7 +480,7 @@
 
           <div class="field-group">
             <label data-pt="Roteiro / Transcrição (ou importe .SRT):" data-en="Script / Transcript (or import .SRT):">Roteiro / Transcrição (ou importe .SRT):</label>
-            <textarea id="caption-script" rows="4" placeholder="Digite o texto falado no vídeo ou carregue um arquivo .SRT para gerar o Karaokê palavra por palavra...">Bem-vindo ao ClipCut! Agora cada palavra falada muda de cor exatamente no ritmo da sua voz, igualzinho ao CapCut.</textarea>
+            <textarea id="caption-script" rows="4">Bem-vindo ao ClipCut! Agora cada palavra falada muda de cor exatamente no ritmo da sua voz, igualzinho ao CapCut.</textarea>
           </div>
 
           <div class="btn-row">
@@ -239,7 +493,6 @@
         </div>
       </aside>
 
-      <!-- Centro: Monitor com Renderizador Canvas Karaokê Palavra por Palavra -->
       <section class="stage-center">
         <div id="canvas-wrapper" class="canvas-wrapper aspect-16-9">
           <video id="source-video" playsinline crossorigin="anonymous" hidden></video>
@@ -253,7 +506,6 @@
         </div>
       </section>
 
-      <!-- Painel Direito: Inspetor de Texto & Presets CapCut -->
       <aside class="panel panel-right">
         <div class="panel-section">
           <h3 data-pt="3. Presets CapCut (1 Clique)" data-en="3. CapCut Presets (1-Click)">3. Presets CapCut (1 Clique)</h3>
@@ -311,7 +563,6 @@
       </aside>
     </main>
 
-    <!-- Timeline Inferior com Faixas de Vídeo e Legendas -->
     <footer class="timeline-dock">
       <div class="timeline-track">
         <span class="track-label" data-pt="💬 Legendas" data-en="💬 Captions">💬 Legendas</span>
@@ -327,7 +578,7 @@
   </div>
 
   <!-- ═══════════════════════════════════════════════════════════════════════
-       3. MODAL ECOSSISTEMA 4U-LABS (14 LINKS OFICIAIS + PAYPAL)
+       4. MODAL ECOSSISTEMA 4U-LABS (14 LINKS OFICIAIS + PAYPAL)
        ═══════════════════════════════════════════════════════════════════════ -->
   <div id="modal-4ulabs" class="modal-backdrop hidden">
     <div class="modal-card">
@@ -372,6 +623,6 @@
   </div>
 
   <div id="toast" class="toast hidden"></div>
-  <script src="app.js"></script>
+  <script src="app.js?v=2.0"></script>
 </body>
 </html>
