@@ -1378,6 +1378,7 @@ const btnCloseCopilot = document.getElementById('btn-close-copilot');
 const copilotDrawer = document.getElementById('copilot-drawer');
 const diagMedia = document.getElementById('diag-media');
 const diagCaptions = document.getElementById('diag-captions');
+const diagCuts = document.getElementById('diag-cuts');
 const diagStyle = document.getElementById('diag-style');
 const diagAspect = document.getElementById('diag-aspect');
 const copilotTip = document.getElementById('copilot-proactive-tip');
@@ -1388,8 +1389,10 @@ const btnCopilotSubmit = document.getElementById('btn-copilot-submit');
 function updateCopilotDiagnostics() {
   if (!copilotDrawer || copilotDrawer.classList.contains('hidden')) return;
   const numPhrases = (state.phrases || []).length;
+  const numCuts = (state.videoSegments || []).length;
   if (diagMedia) diagMedia.textContent = state.hasVideo ? 'Vídeo Pronto' : 'Exemplo';
   if (diagCaptions) diagCaptions.textContent = `${numPhrases} Frases`;
+  if (diagCuts) diagCuts.textContent = `${numCuts} Trecho${numCuts > 1 ? 's' : ''}`;
   if (diagStyle) diagStyle.textContent = (state.preset || 'Hormozi').toUpperCase();
   const is916 = canvas.height > canvas.width;
   if (diagAspect) diagAspect.textContent = is916 ? '9:16' : '16:9';
@@ -1397,10 +1400,12 @@ function updateCopilotDiagnostics() {
   if (copilotTip) {
     if (!is916) {
       copilotTip.innerHTML = '💡 <em>Dica do Copiloto:</em> Seu vídeo está em 16:9. Se for postar no Reels ou TikTok, converta para <strong>Formato 9:16</strong> com 1 clique abaixo.';
+    } else if (numCuts > 1) {
+      copilotTip.innerHTML = `💡 <em>Dica do Copiloto:</em> Timeline ativa com <strong>${numCuts} trechos</strong>. Pressione <strong>S</strong> para novos cortes ou <strong>Delete</strong> para remover o trecho selecionado.`;
     } else if (state.anim !== 'pop') {
       copilotTip.innerHTML = '💡 <em>Dica do Copiloto:</em> Suas legendas estão sem efeito de entrada. Ative o <strong>Pop Elástico</strong> para prender a atenção da audiência!';
     } else {
-      copilotTip.innerHTML = `💡 <em>Dica do Copiloto:</em> Projeto otimizado! ${numPhrases} frases sincronizadas com estilo <strong>${(state.preset || 'Hormozi').toUpperCase()}</strong> e Karaokê ativo.`;
+      copilotTip.innerHTML = `💡 <em>Dica do Copiloto:</em> Projeto otimizado! ${numPhrases} frases com estilo <strong>${(state.preset || 'Hormozi').toUpperCase()}</strong> e Karaokê ativo.`;
     }
   }
 }
@@ -1422,6 +1427,61 @@ if (btnOpenCopilot) btnOpenCopilot.addEventListener('click', openCopilot);
 if (btnCloseCopilot) btnCloseCopilot.addEventListener('click', closeCopilot);
 
 const COPILOT_KB = {
+  como_cortar_video: {
+    answer: "No ClipCut você faz cortes precisos direto na linha do tempo:\n1. Posicione a agulha vermelha onde quer cortar;\n2. Clique em '✂️ Dividir Trecho (S)' ou aperte a tecla S no teclado;\n3. Para remover uma parte, clique nela e aperte Delete ou Backspace;\n4. O ClipCut une os trechos restantes automaticamente (Ripple Delete).",
+    btnText: "✂️ Dividir Vídeo na Agulha Agora",
+    action: () => {
+      splitCurrentSegment();
+      updateCopilotDiagnostics();
+    }
+  },
+  atalhos_teclado: {
+    answer: "Atalhos rápidos para agilizar sua edição:\n• Espaço: Play / Pause no vídeo\n• Tecla S ou C: Dividir (cortar) vídeo no ponto atual\n• Delete ou Backspace: Excluir trecho selecionado com Ripple automático\n• Clique no trecho da timeline: Seleciona e foca na minutagem\n• Ctrl + Shift + R: Forçar atualização e limpar cache do navegador",
+    btnText: "✂️ Testar Corte com Tecla S",
+    action: () => {
+      splitCurrentSegment();
+      updateCopilotDiagnostics();
+    }
+  },
+  traducao_ingles_portugues: {
+    answer: "Se o seu vídeo possui fala em inglês, você pode gerar as legendas já traduzidas para português:\n1. Na seção 'Áudio & Transcrição', abra o seletor de idioma;\n2. Escolha 'Inglês ➔ Traduzir p/ Português (PT)';\n3. Clique em 'Transcrever Áudio com Whisper IA'.\nO modelo reconhece a fala em inglês e traduz instantaneamente mantendo o tempo da voz!",
+    btnText: "🌐 Ativar Modo Inglês ➔ Português",
+    action: () => {
+      const sel = document.getElementById('sel-transcribe-lang');
+      if (sel) {
+        sel.value = 'en_to_pt';
+        sel.dispatchEvent(new Event('change'));
+      }
+      const btn = document.getElementById('btn-transcribe-video');
+      if (btn) {
+        btn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      showToast('🌐 Modo "Inglês ➔ Traduzir p/ Português" selecionado!');
+    }
+  },
+  exportar_video: {
+    answer: "Você pode exportar seu vídeo com legendas gravadas (burned-in) direto no navegador!\n• Clique no botão '🎬 Exportar Vídeo' no topo;\n• Escolha a resolução (1080p Full HD, 720p ou 4K);\n• O navegador renderiza o vídeo via aceleração de hardware e baixa o arquivo .mp4/.webm final pronto para publicação!\n• Você também pode baixar apenas o arquivo leve .SRT com 1 clique.",
+    btnText: "🎬 Abrir Central de Exportação",
+    action: () => {
+      openExportModal();
+    }
+  },
+  evitar_corte_legendas: {
+    answer: "O ClipCut protege suas legendas contra cortes na tela com 4 camadas automáticas:\n1. Margem de segurança de 84% de largura (o texto nunca encosta nas bordas);\n2. Quebra automática inteligente em até 2 linhas;\n3. Auto-Downscaling: frases grandes reduzem a fonte sozinhas para caber perfeitamente;\n4. Controle manual de Tamanho da Fonte (18px a 72px) na barra esquerda.",
+    btnText: "🛡️ Aplicar Margem Segura & Centralizar",
+    action: () => {
+      const fontSizeSlider = document.getElementById('sub-font-size');
+      if (fontSizeSlider) {
+        fontSizeSlider.value = 36;
+        fontSizeSlider.dispatchEvent(new Event('input'));
+      }
+      const posX = document.getElementById('sub-pos-x');
+      const posY = document.getElementById('sub-pos-y');
+      if (posX) { posX.value = 50; posX.dispatchEvent(new Event('input')); }
+      if (posY) { posY.value = 80; posY.dispatchEvent(new Event('input')); }
+      showToast('🛡️ Legendas reajustadas para área 100% segura!');
+    }
+  },
   como_fazer_karaoke: {
     answer: "No ClipCut, a legenda Karaokê mantém a frase fixa em branco e destaca apenas a palavra falada no milissegundo exato da voz em amarelo vibrante (#FFDE00) ou verde neon (#00FF88).",
     btnText: "✨ Aplicar Estilo Hormozi Karaokê",
@@ -1437,14 +1497,17 @@ const COPILOT_KB = {
     answer: "O Auto Silence Cutter analisa o áudio em 1.000 amostras por segundo, detecta pausas abaixo de -32 dB com mais de 0,40s de duração, preserva 60ms de respiração e fecha os espaços com Ripple Delete magnético.",
     btnText: "✂️ Executar Corte de Silêncios Agora",
     action: () => {
-      document.getElementById('btn-cut-silences').click();
+      const btnCut = document.getElementById('btn-cut-silences');
+      if (btnCut) btnCut.click();
+      else autoCutSilences();
     }
   },
   formato_916: {
     answer: "Converte o projeto instantaneamente para 1080×1920 (proporção vertical 9:16), ideal para Reels do Instagram, TikTok e YouTube Shorts com enquadramento inteligente Fill.",
     btnText: "📱 Mudar para 9:16 Vertical",
     action: () => {
-      document.getElementById('btn-aspect-9-16').click();
+      const btnAspect = document.getElementById('btn-aspect-9-16');
+      if (btnAspect) btnAspect.click();
       updateCopilotDiagnostics();
     }
   },
@@ -1452,7 +1515,8 @@ const COPILOT_KB = {
     answer: "O Zoom Dinâmico cria keyframes automáticos alternando suavemente a escala do vídeo entre 100% e 114%, quebrando a monotonia e aumentando a retenção do público.",
     btnText: "🎯 Alternar Zoom Dinâmico",
     action: () => {
-      document.getElementById('btn-punch-zoom').click();
+      const btnZoom = document.getElementById('btn-punch-zoom');
+      if (btnZoom) btnZoom.click();
       updateCopilotDiagnostics();
     }
   },
@@ -1474,9 +1538,9 @@ const COPILOT_KB = {
       if (btn) btn.click();
     }
   },
-  exportar_video: {
-    answer: "Você pode baixar o arquivo de legendas .SRT sincronizado aqui no navegador ou baixar o aplicativo nativo para o seu sistema (Linux, Windows, Mac) para exportar MP4 acelerado pela GPU.",
-    btnText: "⬇️ Baixar Instalador Nativo",
+  diferenca_web_desktop: {
+    answer: "Comparativo Web vs Desktop:\n• Versão Web (PWA): Roda direto no navegador com 100% de privacidade, transcreve com Whisper IA local, corta trechos na timeline e renderiza vídeos em MP4/WebM sem precisar instalar nada.\n• Versão Desktop Nativa (Linux / Win / Mac): Para criadores profissionais que precisam de aceleração dedicada por GPU (FFmpeg / NVENC), renderização ultra-rápida de vídeos 4K pesados e exportação em lote.",
+    btnText: "💻 Baixar ClipCut Desktop",
     action: () => {
       openDownloadModal();
     }
@@ -1485,11 +1549,12 @@ const COPILOT_KB = {
     answer: "Para importar legendas prontas, basta clicar em 'Importar .SRT' na barra esquerda. O ClipCut sincroniza todas as falas instantaneamente.",
     btnText: "📄 Selecionar Arquivo .SRT",
     action: () => {
-      document.getElementById('srt-upload').click();
+      const srtInp = document.getElementById('srt-upload');
+      if (srtInp) srtInp.click();
     }
   },
   transcrever_audio: {
-    answer: "O ClipCut agora transcreve a fala do seu vídeo direto no navegador usando o modelo Whisper IA! Você também pode usar o microfone para ditar falas ao vivo.",
+    answer: "O ClipCut agora transcreve a fala do seu vídeo direto no navegador usando o modelo Whisper IA! Suporta Português, Inglês, Espanhol e tradução automática de Inglês para Português.",
     btnText: "🎙️ Transcrever Áudio do Vídeo Agora",
     action: () => {
       const btn = document.getElementById('btn-transcribe-video');
@@ -1543,28 +1608,38 @@ function handleCopilotQuery(keyOrText) {
   appendCopilotMessage('user', keyOrText);
 
   setTimeout(() => {
-    if (query.includes('transcrev') || query.includes('áudio') || query.includes('audio') || query.includes('voz') || query.includes('ouvir') || query.includes('falar')) {
+    if (query.includes('cortar video') || query.includes('cortar o video') || query.includes('cortar') || query.includes('dividir') || query.includes('trecho') || query.includes('segmento') || query.includes('trim') || query.includes('split')) {
+      appendCopilotMessage('ai', COPILOT_KB.como_cortar_video.answer, COPILOT_KB.como_cortar_video);
+    } else if (query.includes('atalho') || query.includes('teclado') || query.includes('tecla') || query.includes('letra s') || query.includes('delete') || query.includes('espaço') || query.includes('espaco')) {
+      appendCopilotMessage('ai', COPILOT_KB.atalhos_teclado.answer, COPILOT_KB.atalhos_teclado);
+    } else if (query.includes('ingles') || query.includes('inglês') || query.includes('traduz') || query.includes('tradução') || query.includes('traducao') || query.includes('portugues') || query.includes('português') || query.includes('idioma')) {
+      appendCopilotMessage('ai', COPILOT_KB.traducao_ingles_portugues.answer, COPILOT_KB.traducao_ingles_portugues);
+    } else if (query.includes('fora da tela') || query.includes('cortada') || query.includes('cortando') || query.includes('caber') || query.includes('margem') || query.includes('tamanho') || query.includes('fonte') || query.includes('limite') || query.includes('evitar')) {
+      appendCopilotMessage('ai', COPILOT_KB.evitar_corte_legendas.answer, COPILOT_KB.evitar_corte_legendas);
+    } else if (query.includes('export') || query.includes('mp4') || query.includes('webm') || query.includes('salvar') || query.includes('baixar video') || query.includes('render')) {
+      appendCopilotMessage('ai', COPILOT_KB.exportar_video.answer, COPILOT_KB.exportar_video);
+    } else if (query.includes('transcrev') || query.includes('áudio') || query.includes('audio') || query.includes('voz') || query.includes('ouvir') || query.includes('falar') || query.includes('whisper')) {
       appendCopilotMessage('ai', COPILOT_KB.transcrever_audio.answer, COPILOT_KB.transcrever_audio);
-    } else if (query.includes('karaoke') || query.includes('legenda') || query.includes('palavra') || query.includes('cor')) {
+    } else if (query.includes('karaoke') || query.includes('karaokê') || query.includes('legenda') || query.includes('palavra') || query.includes('cor')) {
       appendCopilotMessage('ai', COPILOT_KB.como_fazer_karaoke.answer, COPILOT_KB.como_fazer_karaoke);
-    } else if (query.includes('silêncio') || query.includes('silencio') || query.includes('pausa') || query.includes('cort')) {
+    } else if (query.includes('silêncio') || query.includes('silencio') || query.includes('pausa')) {
       appendCopilotMessage('ai', COPILOT_KB.cortar_silencios.answer, COPILOT_KB.cortar_silencios);
     } else if (query.includes('9:16') || query.includes('vertical') || query.includes('reels') || query.includes('tiktok') || query.includes('shorts')) {
       appendCopilotMessage('ai', COPILOT_KB.formato_916.answer, COPILOT_KB.formato_916);
-    } else if (query.includes('zoom') || query.includes('punch') || query.includes('dinâmico')) {
+    } else if (query.includes('zoom') || query.includes('punch') || query.includes('dinâmico') || query.includes('dinamico')) {
       appendCopilotMessage('ai', COPILOT_KB.zoom_dinamico.answer, COPILOT_KB.zoom_dinamico);
     } else if (query.includes('pop') || query.includes('anima') || query.includes('elastico') || query.includes('mola')) {
       appendCopilotMessage('ai', COPILOT_KB.animacao_pop.answer, COPILOT_KB.animacao_pop);
     } else if (query.includes('preset') || query.includes('hormozi') || query.includes('estilo')) {
       appendCopilotMessage('ai', COPILOT_KB.presets_capcut.answer, COPILOT_KB.presets_capcut);
-    } else if (query.includes('export') || query.includes('mp4') || query.includes('salvar') || query.includes('baixar')) {
-      appendCopilotMessage('ai', COPILOT_KB.exportar_video.answer, COPILOT_KB.exportar_video);
+    } else if (query.includes('desktop') || query.includes('computador') || query.includes('pc') || query.includes('diferen') || query.includes('gpu') || query.includes('instalar')) {
+      appendCopilotMessage('ai', COPILOT_KB.diferenca_web_desktop.answer, COPILOT_KB.diferenca_web_desktop);
     } else if (query.includes('srt') || query.includes('subrip') || query.includes('import')) {
       appendCopilotMessage('ai', COPILOT_KB.importar_srt.answer, COPILOT_KB.importar_srt);
     } else {
-      appendCopilotMessage('ai', `Com o ClipCut você pode editar e animar seu vídeo com total privacidade 100% offline. Você pode clicar nas sugestões acima para ajustar Karaokê, proporção 9:16 ou cortes automáticos!`, {
-        btnText: "✨ Ativar Karaokê Hormozi",
-        action: COPILOT_KB.como_fazer_karaoke.action
+      appendCopilotMessage('ai', `Com o ClipCut você pode editar e animar seu vídeo com total privacidade 100% offline. Você pode cortar vídeos na timeline (tecla S), gerar legendas Karaokê com Whisper IA, traduzir inglês para português e exportar o MP4 final!`, {
+        btnText: "✂️ Como cortar o vídeo?",
+        action: COPILOT_KB.como_cortar_video.action
       });
     }
   }, 240);
