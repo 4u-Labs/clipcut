@@ -12,7 +12,7 @@
   <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png" />
   <link rel="icon" type="image/png" sizes="64x64" href="favicon.png" />
   <link rel="apple-touch-icon" href="icon-192.png" />
-  <link rel="stylesheet" href="styles.css?v=3.1" />
+  <link rel="stylesheet" href="styles.css?v=3.2" />
 </head>
 <body>
 
@@ -500,13 +500,15 @@
 
           <div class="btn-row">
             <button id="btn-generate-karaoke" class="btn-accent-block">✨ <span data-pt="Gerar Legendas Karaokê" data-en="Generate Karaoke Captions">Gerar Legendas Karaokê</span></button>
-            <label class="btn-ghost-block" for="srt-upload">
-              📄 <span data-pt="Importar .SRT" data-en="Import .SRT">Importar .SRT</span>
-              <input id="srt-upload" type="file" accept=".srt" hidden />
-            </label>
-            <button id="btn-quick-export-srt" class="btn-ghost-block" type="button" title="Baixar arquivo de legendas .SRT">
-              💾 <span data-pt="Baixar .SRT" data-en="Download .SRT">Baixar .SRT</span>
-            </button>
+            <div class="srt-actions-row">
+              <label class="btn-ghost-block" for="srt-upload" title="Importar arquivo de legendas .SRT">
+                📄 <span data-pt="Importar .SRT" data-en="Import .SRT">Importar .SRT</span>
+                <input id="srt-upload" type="file" accept=".srt" hidden />
+              </label>
+              <button id="btn-quick-export-srt" class="btn-ghost-block" type="button" title="Baixar arquivo de legendas .SRT sincronizado">
+                💾 <span data-pt="Baixar .SRT" data-en="Download .SRT">Baixar .SRT</span>
+              </button>
+            </div>
           </div>
 
           <div class="field-group" style="margin-top: 10px;">
@@ -870,6 +872,6 @@
   </aside>
 
   <div id="toast" class="toast hidden"></div>
-  <script src="app.js?v=3.1"></script>
+  <script src="app.js?v=3.2"></script>
 </body>
 </html>

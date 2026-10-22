@@ -946,15 +946,38 @@ textarea {
   cursor: pointer;
 }
 
+.srt-actions-row {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
 .btn-ghost-block {
-  display: block;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   text-align: center;
   background: var(--panel-2);
   border: 1px solid var(--border);
+  color: #F8FAFC !important;
   border-radius: 8px;
-  padding: 8px;
+  padding: 9px 12px;
   font-size: 0.82rem;
+  font-weight: 700;
+  font-family: inherit;
   cursor: pointer;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+  outline: none;
+}
+
+.btn-ghost-block:hover {
+  background: rgba(0, 240, 255, 0.15);
+  border-color: var(--cyan);
+  color: #FFFFFF !important;
+  transform: translateY(-1px);
 }
 
 .transcribe-actions-row {
@@ -1254,7 +1277,11 @@ textarea {
   display: flex;
   align-items: center;
   gap: 10px;
-  height: 36px;
+.timeline-track {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 40px;
 }
 
 .track-label {
@@ -1265,32 +1292,50 @@ textarea {
 }
 
 .track-lane {
+  position: relative;
   flex: 1;
-  height: 32px;
-  background: var(--bg);
-  border: 1px solid var(--border);
+  height: 36px;
+  background: #080C14;
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 8px;
-  display: flex;
-  align-items: center;
-  padding: 0 6px;
-  gap: 6px;
-  overflow-x: auto;
+  overflow: hidden;
+  box-sizing: border-box;
+  cursor: pointer;
 }
 
 .clip-pill {
-  padding: 3px 8px;
-  border-radius: 6px;
-  font-size: 0.72rem;
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  padding: 2px 7px;
+  border-radius: 5px;
+  font-size: 0.70rem;
   font-weight: 700;
   white-space: nowrap;
-  background: rgba(124, 92, 255, 0.25);
-  border: 1px solid var(--accent);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background: rgba(124, 92, 255, 0.28);
+  border: 1px solid rgba(124, 92, 255, 0.65);
+  color: #E2E8F0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: all 0.15s ease;
+  box-sizing: border-box;
+  z-index: 2;
+}
+
+.clip-pill:hover {
+  background: rgba(124, 92, 255, 0.45);
+  border-color: #A855F7;
+  color: #FFF;
 }
 
 .clip-pill.active-word {
-  background: rgba(255, 222, 0, 0.25);
+  background: rgba(255, 222, 0, 0.35);
   border-color: var(--yellow);
-  color: var(--yellow);
+  color: #FFF;
+  box-shadow: 0 0 8px rgba(255, 222, 0, 0.4);
 }
 
 .video-pill {
@@ -1300,55 +1345,107 @@ textarea {
 }
 
 .video-segment-pill {
-  padding: 3px 8px;
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
   border-radius: 6px;
-  font-size: 0.72rem;
-  font-weight: 700;
-  white-space: nowrap;
-  background: rgba(0, 240, 255, 0.16);
-  border: 1px solid rgba(0, 240, 255, 0.45);
+  background: #0F172A;
+  border: 1.5px solid rgba(0, 240, 255, 0.35);
   color: #fff;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  transition: all 0.15s ease;
+  overflow: hidden;
+  box-sizing: border-box;
+  transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+  z-index: 2;
 }
 
 .video-segment-pill:hover {
-  background: rgba(0, 240, 255, 0.28);
+  border-color: rgba(0, 240, 255, 0.75);
+  background: #141E33;
 }
 
 .video-segment-pill.active {
-  border-color: var(--yellow);
-  box-shadow: 0 0 12px rgba(255, 222, 0, 0.55);
-  background: rgba(255, 222, 0, 0.22);
+  border-color: var(--cyan);
+  background: #121F33;
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.35);
+}
+
+.video-segment-content {
+  position: absolute;
+  left: 6px;
+  top: 3px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.66rem;
+  font-weight: 700;
+  color: #E2E8F0;
+  pointer-events: none;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
 }
 
 .seg-tag-active {
-  background: var(--yellow);
-  color: #0b111e;
-  font-size: 0.62rem;
+  background: var(--cyan);
+  color: #040914;
+  font-size: 0.56rem;
   font-weight: 900;
-  padding: 1px 5px;
-  border-radius: 4px;
-  margin-left: 6px;
-  letter-spacing: 0.4px;
-  display: inline-block;
+  padding: 1px 4px;
+  border-radius: 3px;
+  letter-spacing: 0.3px;
 }
 
 .video-segment-del {
-  background: transparent;
-  border: none;
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 0.75rem;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 0.68rem;
   cursor: pointer;
-  padding: 0 2px;
+  padding: 1px 4px;
   line-height: 1;
+  pointer-events: auto;
+  transition: all 0.15s ease;
 }
 
 .video-segment-del:hover {
+  background: rgba(255, 75, 75, 0.4);
   color: #ff4444;
+  border-color: #ff4444;
+}
+
+.segment-waveform-canvas {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.9;
+}
+
+.timeline-playhead-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: #FF3366;
+  box-shadow: 0 0 6px rgba(255, 51, 102, 0.85);
+  pointer-events: none;
+  z-index: 10;
+  transform: translateX(-50%);
+}
+
+.timeline-playhead-line::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -4px;
+  width: 10px;
+  height: 7px;
+  background: #FF3366;
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
 }
 
 /* ── 4. 4U-LABS TOPBAR, LANGUAGE SWITCH, FOOTER & MODALS ───────────────── */

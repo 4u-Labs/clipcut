@@ -196,7 +196,7 @@ function drawSegmentWaveform(canvasEl, startSec, endSec, totalSec) {
   ctx.clearRect(0, 0, w, h);
 
   if (!audioWaveformData) {
-    audioWaveformData = generateProceduralWaveform(320);
+    audioWaveformData = generateProceduralWaveform(400);
   }
 
   const allPeaks = audioWaveformData;
@@ -205,26 +205,24 @@ function drawSegmentWaveform(canvasEl, startSec, endSec, totalSec) {
   const startIdx = Math.floor(startRatio * allPeaks.length);
   const endIdx = Math.max(startIdx + 2, Math.floor(endRatio * allPeaks.length));
 
-  const numBars = Math.max(14, Math.floor(w / 4));
   const barWidth = 2;
-  const gap = Math.max(1, (w - numBars * barWidth) / numBars);
+  const barGap = 1.5;
+  const numBars = Math.max(12, Math.floor(w / (barWidth + barGap)));
 
-  const grad = ctx.createLinearGradient(0, 0, w, 0);
+  const grad = ctx.createLinearGradient(0, h, 0, 0);
   grad.addColorStop(0, '#00F0FF');
-  grad.addColorStop(0.5, '#7C5CFF');
-  grad.addColorStop(1, '#FFDE00');
+  grad.addColorStop(0.6, '#38BDF8');
+  grad.addColorStop(1, '#818CF8');
   ctx.fillStyle = grad;
 
   for (let i = 0; i < numBars; i++) {
     const progress = i / numBars;
     const peakIdx = Math.floor(startIdx + progress * (endIdx - startIdx));
-    const rawVal = allPeaks[Math.min(allPeaks.length - 1, peakIdx)] || 0.25;
-    const barHeight = Math.max(3, rawVal * (h * 0.82));
-    const x = i * (barWidth + gap);
-    const y = (h - barHeight) / 2;
-    ctx.beginPath();
-    ctx.roundRect(x, y, barWidth, barHeight, 1);
-    ctx.fill();
+    const rawVal = allPeaks[Math.min(allPeaks.length - 1, peakIdx)] || 0.20;
+    const barHeight = Math.max(2, rawVal * (h * 0.65));
+    const x = i * (barWidth + barGap);
+    const y = h - barHeight - 2;
+    ctx.fillRect(x, y, barWidth, barHeight);
   }
 }
 
@@ -406,18 +404,62 @@ function buildCaptionsFromText(rawText) {
   renderFrame();
 }
 
+function appendPlayheadToLane(laneEl) {
+  if (!laneEl) return;
+  const needle = document.createElement('div');
+  needle.className = 'timeline-playhead-line';
+  const totalDur = Math.max(0.1, state.duration);
+  const pct = Math.max(0, Math.min(100, (state.currentTime / totalDur) * 100));
+  needle.style.left = `${pct}%`;
+  laneEl.appendChild(needle);
+}
+
+function updatePlayheadNeedles() {
+  const totalDur = Math.max(0.1, state.duration);
+  const pct = Math.max(0, Math.min(100, (state.currentTime / totalDur) * 100));
+  document.querySelectorAll('.timeline-playhead-line').forEach(el => {
+    el.style.left = `${pct}%`;
+  });
+
+  // Highlight active caption pill on timeline
+  const cur = state.currentTime;
+  if (captionsLane) {
+    const pills = captionsLane.querySelectorAll('.clip-pill');
+    state.phrases.forEach((p, idx) => {
+      const isCur = cur >= p.start && cur <= p.end;
+      if (pills[idx]) {
+        pills[idx].classList.toggle('active-word', isCur);
+      }
+    });
+  }
+}
+
 function renderCaptionsTrack() {
+  if (!captionsLane) return;
   captionsLane.innerHTML = '';
-  state.phrases.forEach((p) => {
+  const totalDur = Math.max(0.1, state.duration);
+  const cur = state.currentTime;
+
+  state.phrases.forEach((p, idx) => {
     const pill = document.createElement('div');
-    pill.className = 'clip-pill';
+    const isCurrent = cur >= p.start && cur <= p.end;
+    pill.className = `clip-pill ${isCurrent ? 'active-word' : ''}`;
+
+    const leftPct = (p.start / totalDur) * 100;
+    const widthPct = Math.max(3.5, ((p.end - p.start) / totalDur) * 100);
+    pill.style.left = `${leftPct}%`;
+    pill.style.width = `calc(${widthPct}% - 2px)`;
     pill.textContent = p.words.join(' ');
-    pill.title = `${p.start.toFixed(2)}s - ${p.end.toFixed(2)}s`;
-    pill.addEventListener('click', () => {
+    pill.title = `Frase ${idx + 1} (${p.start.toFixed(2)}s - ${p.end.toFixed(2)}s): "${p.words.join(' ')}"`;
+
+    pill.addEventListener('click', (e) => {
+      e.stopPropagation();
       seekTo(p.start + 0.02);
     });
     captionsLane.appendChild(pill);
   });
+
+  appendPlayheadToLane(captionsLane);
 }
 
 function renderVideoTrackLane() {
@@ -425,6 +467,7 @@ function renderVideoTrackLane() {
   videoLane.innerHTML = '';
   const totalDur = Math.max(0.1, state.duration);
   const numSegs = state.videoSegments.length;
+  const laneWidth = videoLane.clientWidth || 1000;
 
   let activeDur = 0;
   state.videoSegments.forEach((seg, idx) => {
@@ -432,20 +475,25 @@ function renderVideoTrackLane() {
     const isSelected = seg.id === state.selectedSegmentId;
     const pill = document.createElement('div');
     pill.className = `video-segment-pill ${isSelected ? 'active' : ''}`;
-    pill.style.flex = `${Math.max(0.1, seg.end - seg.start)}`;
-    pill.title = `Trecho ${idx + 1}: ${seg.start.toFixed(2)}s - ${seg.end.toFixed(2)}s (Clique para selecionar)`;
 
-    // Audio Waveform Canvas overlay
+    const leftPct = (seg.start / totalDur) * 100;
+    const widthPct = Math.max(2, ((seg.end - seg.start) / totalDur) * 100);
+    pill.style.left = `${leftPct}%`;
+    pill.style.width = `calc(${widthPct}% - 2px)`;
+    pill.title = `Trecho ${idx + 1}: ${seg.start.toFixed(2)}s - ${seg.end.toFixed(2)}s`;
+
+    // Audio Waveform Canvas overlay at crisp pixel resolution
     const waveCanvas = document.createElement('canvas');
     waveCanvas.className = 'segment-waveform-canvas';
-    waveCanvas.width = 180;
-    waveCanvas.height = 32;
+    const segPixelW = Math.max(120, Math.round(laneWidth * (widthPct / 100)));
+    waveCanvas.width = segPixelW;
+    waveCanvas.height = 36;
     drawSegmentWaveform(waveCanvas, seg.start, seg.end, totalDur);
     pill.appendChild(waveCanvas);
 
     const contentDiv = document.createElement('div');
     contentDiv.className = 'video-segment-content';
-    contentDiv.innerHTML = `<span>${isSelected ? '🎯' : '🎬'} Trecho ${idx + 1} (${seg.start.toFixed(1)}s - ${seg.end.toFixed(1)}s) ${isSelected ? '<span class="seg-tag-active">SELECIONADO</span>' : ''}</span>`;
+    contentDiv.innerHTML = `<span>🎬 Trecho ${idx + 1} (${(seg.end - seg.start).toFixed(1)}s) ${isSelected ? '<span class="seg-tag-active">ATIVO</span>' : ''}</span>`;
 
     if (numSegs > 1) {
       const delBtn = document.createElement('button');
@@ -460,15 +508,18 @@ function renderVideoTrackLane() {
     }
     pill.appendChild(contentDiv);
 
-    pill.addEventListener('click', () => {
+    pill.addEventListener('click', (e) => {
+      e.stopPropagation();
       state.selectedSegmentId = seg.id;
       seekTo(seg.start);
       renderVideoTrackLane();
-      showToast(`🎯 Trecho ${idx + 1} selecionado (${seg.start.toFixed(1)}s - ${seg.end.toFixed(1)}s). Clique em "🗑️ Excluir Trecho" ou aperte Delete para remover.`);
+      showToast(`🎯 Trecho ${idx + 1} selecionado (${seg.start.toFixed(1)}s - ${seg.end.toFixed(1)}s).`);
     });
 
     videoLane.appendChild(pill);
   });
+
+  appendPlayheadToLane(videoLane);
 
   if (cutsSummary) {
     const pctActive = Math.min(100, Math.round((activeDur / totalDur) * 100));
@@ -693,6 +744,7 @@ function tick(now) {
 
     scrubber.value = state.currentTime;
     updateTimecode();
+    updatePlayheadNeedles();
     renderFrame();
   }
   requestAnimationFrame(tick);
@@ -707,8 +759,20 @@ function seekTo(t) {
   scrubber.value = state.currentTime;
   updateTimecode();
   updateActiveSegmentOnPlayhead();
+  updatePlayheadNeedles();
   renderFrame();
 }
+
+[captionsLane, videoLane].forEach(lane => {
+  if (!lane) return;
+  lane.addEventListener('click', (e) => {
+    if (e.target.closest('.video-segment-del') || e.target.closest('.clip-pill')) return;
+    const rect = lane.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const ratio = Math.max(0, Math.min(1, clickX / rect.width));
+    seekTo(ratio * state.duration);
+  });
+});
 
 function updateTimecode() {
   const fmt = (s) => {
