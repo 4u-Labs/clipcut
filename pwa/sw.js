@@ -1,10 +1,15 @@
-const CACHE_NAME = 'clipcut-pwa-v2.0.0';
+const CACHE_NAME = 'clipcut-pwa-v2.9.0';
 const ASSETS = [
   './',
   './index.html',
   './styles.css',
   './app.js',
   './manifest.json',
+  './icon.png',
+  './icon-192.png',
+  './icon-512.png',
+  './favicon.png',
+  './favicon.ico',
   './icon.svg'
 ];
 
