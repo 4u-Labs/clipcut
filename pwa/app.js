@@ -162,6 +162,7 @@ const state = {
   preset: 'hormozi',
   anim: 'pop',
   fontSize: 36,
+  posX: 0.50,
   posY: 0.82,
   baseColor: '#FFFFFF',
   hlColor: '#FFDE00',
@@ -172,6 +173,177 @@ const state = {
   videoSegments: [{ id: 1, start: 0, end: 10.0 }],
   selectedSegmentId: 1
 };
+
+// ── WAVEFORM AUDIO VISUALIZATION ───────────────────────────────────────────
+let audioWaveformData = null;
+
+function generateProceduralWaveform(length = 320) {
+  const peaks = new Float32Array(length);
+  for (let i = 0; i < length; i++) {
+    const wave = Math.sin(i * 0.16) * Math.cos(i * 0.06);
+    const noise = Math.random() * 0.40;
+    let amp = Math.max(0.08, Math.abs(wave) + noise);
+    if (i % 32 < 4) amp *= 0.15; // natural pause between phrases
+    peaks[i] = Math.min(1.0, amp);
+  }
+  return peaks;
+}
+
+function drawSegmentWaveform(canvasEl, startSec, endSec, totalSec) {
+  const ctx = canvasEl.getContext('2d');
+  const w = canvasEl.width;
+  const h = canvasEl.height;
+  ctx.clearRect(0, 0, w, h);
+
+  if (!audioWaveformData) {
+    audioWaveformData = generateProceduralWaveform(320);
+  }
+
+  const allPeaks = audioWaveformData;
+  const startRatio = Math.max(0, startSec / totalSec);
+  const endRatio = Math.min(1, endSec / totalSec);
+  const startIdx = Math.floor(startRatio * allPeaks.length);
+  const endIdx = Math.max(startIdx + 2, Math.floor(endRatio * allPeaks.length));
+
+  const numBars = Math.max(14, Math.floor(w / 4));
+  const barWidth = 2;
+  const gap = Math.max(1, (w - numBars * barWidth) / numBars);
+
+  const grad = ctx.createLinearGradient(0, 0, w, 0);
+  grad.addColorStop(0, '#00F0FF');
+  grad.addColorStop(0.5, '#7C5CFF');
+  grad.addColorStop(1, '#FFDE00');
+  ctx.fillStyle = grad;
+
+  for (let i = 0; i < numBars; i++) {
+    const progress = i / numBars;
+    const peakIdx = Math.floor(startIdx + progress * (endIdx - startIdx));
+    const rawVal = allPeaks[Math.min(allPeaks.length - 1, peakIdx)] || 0.25;
+    const barHeight = Math.max(3, rawVal * (h * 0.82));
+    const x = i * (barWidth + gap);
+    const y = (h - barHeight) / 2;
+    ctx.beginPath();
+    ctx.roundRect(x, y, barWidth, barHeight, 1);
+    ctx.fill();
+  }
+}
+
+// ── UNDO / REDO HISTORY SYSTEM ─────────────────────────────────────────────
+const undoStack = [];
+const redoStack = [];
+let isHistoryRestoring = false;
+
+function captureProjectSnapshot() {
+  return JSON.stringify({
+    phrases: state.phrases,
+    videoSegments: state.videoSegments,
+    selectedSegmentId: state.selectedSegmentId,
+    preset: state.preset,
+    anim: state.anim,
+    rhythm: state.rhythm,
+    fontSize: state.fontSize,
+    posX: state.posX,
+    posY: state.posY,
+    baseColor: state.baseColor,
+    hlColor: state.hlColor,
+    bgBox: state.bgBox,
+    punchInZoom: state.punchInZoom,
+    scriptText: scriptInput ? scriptInput.value : ''
+  });
+}
+
+function pushHistoryState() {
+  if (isHistoryRestoring) return;
+  const snap = captureProjectSnapshot();
+  if (undoStack.length > 0 && undoStack[undoStack.length - 1] === snap) return;
+  undoStack.push(snap);
+  if (undoStack.length > 50) undoStack.shift();
+  redoStack.length = 0;
+  updateUndoRedoUI();
+}
+
+function updateUndoRedoUI() {
+  const canUndo = undoStack.length > 1;
+  const canRedo = redoStack.length > 0;
+  ['btn-undo', 'btn-undo-top'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.style.opacity = canUndo ? '1' : '0.45';
+      el.style.pointerEvents = canUndo ? 'auto' : 'none';
+    }
+  });
+  ['btn-redo', 'btn-redo-top'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.style.opacity = canRedo ? '1' : '0.45';
+      el.style.pointerEvents = canRedo ? 'auto' : 'none';
+    }
+  });
+}
+
+function undo() {
+  if (undoStack.length <= 1) {
+    showToast('Nenhuma alteração anterior para desfazer.');
+    return;
+  }
+  const current = undoStack.pop();
+  redoStack.push(current);
+  const prev = undoStack[undoStack.length - 1];
+  restoreProjectSnapshot(prev);
+  showToast('↩️ Ação desfeita!');
+  updateUndoRedoUI();
+}
+
+function redo() {
+  if (redoStack.length === 0) {
+    showToast('Nenhuma alteração para refazer.');
+    return;
+  }
+  const next = redoStack.pop();
+  undoStack.push(next);
+  restoreProjectSnapshot(next);
+  showToast('↪️ Ação refeita!');
+  updateUndoRedoUI();
+}
+
+function restoreProjectSnapshot(snapStr) {
+  try {
+    const d = JSON.parse(snapStr);
+    isHistoryRestoring = true;
+    state.phrases = d.phrases || [];
+    state.videoSegments = d.videoSegments || [{ id: 1, start: 0, end: state.duration }];
+    state.selectedSegmentId = d.selectedSegmentId || 1;
+    state.preset = d.preset || 'hormozi';
+    state.anim = d.anim || 'pop';
+    state.rhythm = d.rhythm || 'karaoke';
+    state.fontSize = d.fontSize || 36;
+    state.posX = d.posX !== undefined ? d.posX : 0.50;
+    state.posY = d.posY !== undefined ? d.posY : 0.82;
+    state.baseColor = d.baseColor || '#FFFFFF';
+    state.hlColor = d.hlColor || '#FFDE00';
+    state.bgBox = d.bgBox || '';
+    state.punchInZoom = !!d.punchInZoom;
+    if (scriptInput && d.scriptText !== undefined) {
+      scriptInput.value = d.scriptText;
+    }
+    const inpPosY = document.getElementById('inp-pos-y');
+    if (inpPosY) inpPosY.value = Math.round(state.posY * 100);
+    const lblPosY = document.getElementById('lbl-pos-y');
+    if (lblPosY) lblPosY.textContent = `${Math.round(state.posY * 100)}%`;
+    const inpFontSize = document.getElementById('inp-font-size');
+    if (inpFontSize) inpFontSize.value = state.fontSize;
+    const lblFontSize = document.getElementById('lbl-font-size');
+    if (lblFontSize) lblFontSize.textContent = `${state.fontSize}px`;
+    renderVideoTrackLane();
+    renderCaptionsTrack();
+    renderFrame();
+    updateCopilotDiagnostics();
+    isHistoryRestoring = false;
+  } catch (err) {
+    console.error('Erro ao restaurar snapshot:', err);
+    isHistoryRestoring = false;
+  }
+}
 
 function buildCaptionsFromText(rawText) {
   const words = rawText
@@ -262,7 +434,18 @@ function renderVideoTrackLane() {
     pill.className = `video-segment-pill ${isSelected ? 'active' : ''}`;
     pill.style.flex = `${Math.max(0.1, seg.end - seg.start)}`;
     pill.title = `Trecho ${idx + 1}: ${seg.start.toFixed(2)}s - ${seg.end.toFixed(2)}s (Clique para selecionar)`;
-    pill.innerHTML = `<span>${isSelected ? '🎯' : '🎬'} Trecho ${idx + 1} (${seg.start.toFixed(1)}s - ${seg.end.toFixed(1)}s) ${isSelected ? '<span class="seg-tag-active">SELECIONADO</span>' : ''}</span>`;
+
+    // Audio Waveform Canvas overlay
+    const waveCanvas = document.createElement('canvas');
+    waveCanvas.className = 'segment-waveform-canvas';
+    waveCanvas.width = 180;
+    waveCanvas.height = 32;
+    drawSegmentWaveform(waveCanvas, seg.start, seg.end, totalDur);
+    pill.appendChild(waveCanvas);
+
+    const contentDiv = document.createElement('div');
+    contentDiv.className = 'video-segment-content';
+    contentDiv.innerHTML = `<span>${isSelected ? '🎯' : '🎬'} Trecho ${idx + 1} (${seg.start.toFixed(1)}s - ${seg.end.toFixed(1)}s) ${isSelected ? '<span class="seg-tag-active">SELECIONADO</span>' : ''}</span>`;
 
     if (numSegs > 1) {
       const delBtn = document.createElement('button');
@@ -273,8 +456,9 @@ function renderVideoTrackLane() {
         e.stopPropagation();
         deleteSegment(seg.id);
       });
-      pill.appendChild(delBtn);
+      contentDiv.appendChild(delBtn);
     }
+    pill.appendChild(contentDiv);
 
     pill.addEventListener('click', () => {
       state.selectedSegmentId = seg.id;
@@ -418,7 +602,7 @@ function renderFrame() {
     safeScale = maxSafeWidth / maxLineW;
   }
 
-  const centerX = w / 2;
+  const centerX = w * (state.posX !== undefined ? state.posX : 0.50);
   const centerY = h * state.posY;
 
   ctx.translate(centerX, centerY);
@@ -822,7 +1006,18 @@ window.addEventListener('keydown', (e) => {
   const tag = (e.target.tagName || '').toLowerCase();
   if (tag === 'input' || tag === 'textarea' || tag === 'select' || e.target.isContentEditable) return;
 
-  if (e.code === 'KeyS' || e.key === 's' || e.key === 'S') {
+  if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z')) {
+    if (e.shiftKey) {
+      e.preventDefault();
+      redo();
+    } else {
+      e.preventDefault();
+      undo();
+    }
+  } else if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || e.key === 'Y')) {
+    e.preventDefault();
+    redo();
+  } else if (e.code === 'KeyS' || e.key === 's' || e.key === 'S') {
     e.preventDefault();
     splitCurrentSegment();
   } else if (e.code === 'Delete' || e.key === 'Delete') {
@@ -833,6 +1028,261 @@ window.addEventListener('keydown', (e) => {
     if (btnPlayPause) btnPlayPause.click();
   }
 });
+
+// Wire undo/redo buttons
+['btn-undo', 'btn-undo-top'].forEach(id => {
+  const btn = document.getElementById(id);
+  if (btn) btn.addEventListener('click', undo);
+});
+['btn-redo', 'btn-redo-top'].forEach(id => {
+  const btn = document.getElementById(id);
+  if (btn) btn.addEventListener('click', redo);
+});
+
+// ── 5c. EMOJIS AUTOMÁTICOS & PROJETO .CLIPCUT ──────────────────────────────
+const EMOJI_DICT = [
+  { words: ['fogo', 'chama', 'quente', 'bombando', 'estourou'], emoji: '🔥' },
+  { words: ['dinheiro', 'grana', 'lucro', 'venda', 'rico', 'faturar', 'dolar', 'reais', 'faturamento'], emoji: '💰' },
+  { words: ['ideia', 'pensar', 'dica', 'segredo', 'truque', 'sacada', 'estratégia'], emoji: '💡' },
+  { words: ['cuidado', 'perigo', 'atencao', 'atenção', 'alerta', 'urgente'], emoji: '⚠️' },
+  { words: ['foguete', 'sucesso', 'crescer', 'subir', 'escala', 'top'], emoji: '🚀' },
+  { words: ['tempo', 'hora', 'rapido', 'rápido', 'minutos', 'segundos', 'agora'], emoji: '⚡' },
+  { words: ['melhor', 'incrivel', 'incrível', 'demais', 'maravilha', 'show'], emoji: '⭐' },
+  { words: ['coracao', 'coração', 'amor', 'paixao', 'paixão', 'gostar'], emoji: '❤️' },
+  { words: ['perfeito', 'certeza', 'exato', '100%'], emoji: '💯' },
+  { words: ['computador', 'celular', 'ia', 'ai', 'robo', 'robô', 'app', 'software'], emoji: '🤖' },
+  { words: ['olha', 'veja', 'assistir', 'repare'], emoji: '👀' },
+  { words: ['meta', 'foco', 'direto', 'objetivo'], emoji: '🎯' },
+  { words: ['vitoria', 'vitória', 'campeao', 'campeão', 'ganhar'], emoji: '🏆' }
+];
+
+function autoInsertEmojis() {
+  if (!scriptInput || !scriptInput.value) {
+    showToast('Nenhum texto de legenda para inserir emojis.');
+    return;
+  }
+  let text = scriptInput.value;
+  let addedCount = 0;
+
+  EMOJI_DICT.forEach(item => {
+    item.words.forEach(w => {
+      const re = new RegExp(`(^|\\s)(${w})([,.!?]?)(\\s|$)`, 'gi');
+      text = text.replace(re, (match, p1, p2, p3, p4) => {
+        if (match.includes(item.emoji)) return match;
+        addedCount++;
+        return `${p1}${item.emoji} ${p2}${p3}${p4}`;
+      });
+    });
+  });
+
+  if (addedCount === 0) {
+    text = `🔥 ${text} 🚀`;
+    addedCount = 2;
+  }
+
+  scriptInput.value = text.replace(/\s+/g, ' ').trim();
+  buildCaptionsFromText(scriptInput.value);
+  pushHistoryState();
+  showToast(`✨ ${addedCount} emojis inteligentes inseridos nas legendas!`);
+}
+
+const btnAutoEmojis = document.getElementById('btn-auto-emojis');
+if (btnAutoEmojis) btnAutoEmojis.addEventListener('click', autoInsertEmojis);
+
+function saveClipCutProject() {
+  const projectData = {
+    clipcut_version: "3.1",
+    app: "ClipCut Studio (4u-Labs)",
+    created_at: new Date().toISOString(),
+    media: {
+      name: currentVideoFile ? currentVideoFile.name : "demo_sample.mp4",
+      duration: state.duration,
+      aspect: canvas.height > canvas.width ? "9:16" : "16:9",
+      canvasWidth: canvas.width,
+      canvasHeight: canvas.height
+    },
+    segments: state.videoSegments,
+    phrases: state.phrases,
+    settings: {
+      preset: state.preset,
+      anim: state.anim,
+      rhythm: state.rhythm,
+      fontSize: state.fontSize,
+      posX: state.posX,
+      posY: state.posY,
+      baseColor: state.baseColor,
+      hlColor: state.hlColor,
+      bgBox: state.bgBox,
+      punchInZoom: state.punchInZoom
+    },
+    script_text: scriptInput.value
+  };
+
+  const blob = new Blob([JSON.stringify(projectData, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  const baseName = currentVideoFile ? currentVideoFile.name.replace(/\.[^/.]+$/, "") : "projeto-clipcut";
+  a.href = URL.createObjectURL(blob);
+  a.download = `${baseName}.clipcut`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  showToast(`💾 Projeto salvo com sucesso em "${baseName}.clipcut"!`);
+}
+
+const btnSaveProj = document.getElementById('btn-save-project');
+if (btnSaveProj) btnSaveProj.addEventListener('click', saveClipCutProject);
+
+function loadClipCutProject(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!data.clipcut_version && !data.phrases && !data.segments) {
+        showToast('Arquivo de projeto inválido ou incompatível.');
+        return;
+      }
+      if (data.media && data.media.duration) {
+        state.duration = data.media.duration;
+        scrubber.max = state.duration;
+      }
+      if (data.media && data.media.aspect === '9:16') {
+        canvas.width = 720; canvas.height = 1280;
+        document.getElementById('btn-aspect-9-16')?.classList.add('active');
+        document.getElementById('btn-aspect-16-9')?.classList.remove('active');
+      } else if (data.media && data.media.aspect === '16:9') {
+        canvas.width = 1280; canvas.height = 720;
+        document.getElementById('btn-aspect-16-9')?.classList.add('active');
+        document.getElementById('btn-aspect-9-16')?.classList.remove('active');
+      }
+      if (Array.isArray(data.segments) && data.segments.length > 0) {
+        state.videoSegments = data.segments;
+        state.selectedSegmentId = state.videoSegments[0].id;
+      }
+      if (Array.isArray(data.phrases)) {
+        state.phrases = data.phrases;
+      }
+      if (data.settings) {
+        if (data.settings.preset) state.preset = data.settings.preset;
+        if (data.settings.anim) state.anim = data.settings.anim;
+        if (data.settings.rhythm) state.rhythm = data.settings.rhythm;
+        if (data.settings.fontSize) state.fontSize = data.settings.fontSize;
+        if (data.settings.posX !== undefined) state.posX = data.settings.posX;
+        if (data.settings.posY !== undefined) state.posY = data.settings.posY;
+        if (data.settings.baseColor) state.baseColor = data.settings.baseColor;
+        if (data.settings.hlColor) state.hlColor = data.settings.hlColor;
+        if (data.settings.bgBox !== undefined) state.bgBox = data.settings.bgBox;
+        if (data.settings.punchInZoom !== undefined) state.punchInZoom = !!data.settings.punchInZoom;
+      }
+      if (data.script_text && scriptInput) {
+        scriptInput.value = data.script_text;
+      }
+      renderVideoTrackLane();
+      renderCaptionsTrack();
+      renderFrame();
+      updateCopilotDiagnostics();
+      pushHistoryState();
+      showToast(`📂 Projeto "${file.name}" carregado com sucesso!`);
+    } catch (err) {
+      console.error(err);
+      showToast('Erro ao ler arquivo .clipcut.');
+    }
+  };
+  reader.readAsText(file);
+}
+
+const inpProjectUpload = document.getElementById('project-upload');
+if (inpProjectUpload) {
+  inpProjectUpload.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) loadClipCutProject(file);
+  });
+}
+
+// ── 5d. DRAG-AND-DROP DE LEGENDAS DIRETO NO CANVAS DE PREVIEW ──────────────
+let isDraggingSubtitle = false;
+
+function setupCanvasSubtitleDrag() {
+  const updatePos = (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const clientX = e.clientX ?? (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
+    const clientY = e.clientY ?? (e.touches && e.touches[0] ? e.touches[0].clientY : 0);
+    const relX = Math.max(0.1, Math.min(0.9, (clientX - rect.left) / rect.width));
+    const relY = Math.max(0.12, Math.min(0.92, (clientY - rect.top) / rect.height));
+
+    state.posX = relX;
+    state.posY = relY;
+
+    const inpPosY = document.getElementById('inp-pos-y');
+    if (inpPosY) inpPosY.value = Math.round(relY * 100);
+    const lblPosY = document.getElementById('lbl-pos-y');
+    if (lblPosY) lblPosY.textContent = `${Math.round(relY * 100)}%`;
+
+    renderFrame();
+  };
+
+  canvas.addEventListener('pointerdown', (e) => {
+    isDraggingSubtitle = true;
+    canvas.classList.add('is-dragging');
+    updatePos(e);
+  });
+
+  window.addEventListener('pointermove', (e) => {
+    if (!isDraggingSubtitle) return;
+    updatePos(e);
+  });
+
+  const stopDrag = () => {
+    if (isDraggingSubtitle) {
+      isDraggingSubtitle = false;
+      canvas.classList.remove('is-dragging');
+      pushHistoryState();
+      showToast(`📍 Legenda posicionada em Y: ${Math.round(state.posY * 100)}%`);
+    }
+  };
+
+  window.addEventListener('pointerup', stopDrag);
+  window.addEventListener('pointercancel', stopDrag);
+}
+
+setupCanvasSubtitleDrag();
+
+// ── 5e. ANÁLISE DE ENGAJAMENTO & RETENÇÃO DE VÍDEO ─────────────────────────
+function analyzeEngagement() {
+  const numPhrases = (state.phrases || []).length;
+  const numWords = (state.phrases || []).reduce((acc, p) => acc + (p.words || []).length, 0);
+  const dur = Math.max(1, state.duration);
+  const wpm = Math.round((numWords / dur) * 60);
+
+  let score = 82;
+  const tips = [];
+
+  if (wpm >= 140 && wpm <= 210) {
+    score += 8;
+    tips.push(`⚡ Cadência excelente (${wpm} Palavras/Min): ritmo ideal para reter atenção no Reels/TikTok.`);
+  } else if (wpm < 140) {
+    tips.push(`⏱️ Ritmo mais calmo (${wpm} PPM): considere cortar pausas ou aplicar Punch Zoom.`);
+  } else {
+    tips.push(`⚡ Ritmo acelerado (${wpm} PPM): verifique a legibilidade das legendas.`);
+  }
+
+  if (state.anim === 'pop') {
+    score += 5;
+    tips.push(`✨ Pop Elástico ativo: prende o olhar a cada nova frase.`);
+  } else {
+    tips.push(`💡 Sugestão: ative o Pop Elástico para dar dinamismo.`);
+  }
+
+  if (state.punchInZoom) {
+    score += 5;
+    tips.push(`🎯 Zoom Dinâmico ativo: quebra monotonia nos cortes.`);
+  } else {
+    tips.push(`💡 Sugestão: ative o Zoom Dinâmico (Punch-In 114%).`);
+  }
+
+  score = Math.min(100, score);
+  return { score, wpm, tips };
+}
 
 let currentVideoFile = null;
 
@@ -861,10 +1311,30 @@ document.getElementById('video-upload').addEventListener('change', (e) => {
 
     state.videoSegments = [{ id: 1, start: 0, end: state.duration }];
     state.selectedSegmentId = 1;
-    renderVideoTrackLane();
+
+    // Extract real audio waveform
+    extractAudioChannelData(file).then(mono => {
+      const numPeaks = 320;
+      const blockSize = Math.floor(mono.length / numPeaks);
+      const peaks = new Float32Array(numPeaks);
+      for (let i = 0; i < numPeaks; i++) {
+        let sum = 0;
+        const start = i * blockSize;
+        for (let j = 0; j < blockSize; j += 4) {
+          sum += Math.abs(mono[start + j] || 0);
+        }
+        peaks[i] = Math.min(1.0, (sum / (blockSize / 4)) * 4.5);
+      }
+      audioWaveformData = peaks;
+      renderVideoTrackLane();
+    }).catch(err => {
+      console.warn('Waveform real extraction skipped:', err);
+      renderVideoTrackLane();
+    });
 
     buildCaptionsFromText(scriptInput.value);
     seekTo(0);
+    pushHistoryState();
     showToast(`Mídia "${file.name}" carregada localmente!`);
     updateCopilotDiagnostics();
   };
@@ -1560,6 +2030,53 @@ const COPILOT_KB = {
       const btn = document.getElementById('btn-transcribe-video');
       if (btn) btn.click();
     }
+  },
+  inserir_emojis: {
+    answer: "O ClipCut analisa o conteúdo das suas legendas e injeta emojis de alto impacto (🔥, 💰, 💡, 🚀, ⚠️, ⭐, ❤️) nos momentos certos para capturar a atenção imediata nas redes sociais!",
+    btnText: "✨ Inserir Emojis Automáticos Agora",
+    action: () => {
+      autoInsertEmojis();
+    }
+  },
+  analise_engajamento: {
+    answer: "📈 Diagnóstico de Retenção & Ritmo do Vídeo:\nO Copiloto calculou a densidade de palavras por minuto (PPM), cortes na linha do tempo e dinamismo visual.\nClique abaixo para ativar automaticamente a combinação ideal de Zoom Dinâmico + Pop Elástico para reter seu público!",
+    btnText: "🎯 Ativar Otimização de Retenção",
+    action: () => {
+      state.punchInZoom = true;
+      document.getElementById('btn-punch-zoom')?.classList.add('active');
+      const btnPop = document.querySelector('#anim-selector button[data-anim="pop"]');
+      if (btnPop) btnPop.click();
+      autoInsertEmojis();
+      renderFrame();
+      updateCopilotDiagnostics();
+      showToast('🚀 Otimização completa de engajamento ativada!');
+    }
+  },
+  salvar_projeto: {
+    answer: "O formato de projeto .clipcut salva todas as suas minutagens, cortes da timeline, legendas Karaokê e estilos em um único arquivo leve. Você pode continuar editando no navegador ou abrir no aplicativo Desktop para renderizar com aceleração de GPU!",
+    btnText: "💾 Salvar Arquivo .clipcut Agora",
+    action: () => {
+      saveClipCutProject();
+    }
+  },
+  arrastar_legenda: {
+    answer: "Você pode clicar e arrastar a legenda livremente direto na tela de vídeo (Canvas)! Conforme você move com o mouse ou dedo, as coordenadas Y e X se ajustam em tempo real respeitando as margens de segurança anti-corte.",
+    btnText: "🛡️ Centralizar na Área Segura",
+    action: () => {
+      state.posX = 0.50;
+      state.posY = 0.82;
+      const inpPosY = document.getElementById('inp-pos-y');
+      if (inpPosY) { inpPosY.value = 82; inpPosY.dispatchEvent(new Event('input')); }
+      renderFrame();
+      showToast('Legenda posicionada na área segura!');
+    }
+  },
+  desfazer_acao: {
+    answer: "O ClipCut possui histórico completo de alterações (Undo/Redo). Você pode usar os atalhos Ctrl+Z para Desfazer e Ctrl+Y para Refazer, ou os botões de seta na barra de ferramentas.",
+    btnText: "↩️ Desfazer Última Alteração",
+    action: () => {
+      undo();
+    }
   }
 };
 
@@ -1608,7 +2125,30 @@ function handleCopilotQuery(keyOrText) {
   appendCopilotMessage('user', keyOrText);
 
   setTimeout(() => {
-    if (query.includes('cortar video') || query.includes('cortar o video') || query.includes('cortar') || query.includes('dividir') || query.includes('trecho') || query.includes('segmento') || query.includes('trim') || query.includes('split')) {
+    // Check compound / multi-command queries
+    if ((query.includes('cort') || query.includes('silêncio') || query.includes('silencio')) && (query.includes('9:16') || query.includes('vertical'))) {
+      autoCutSilences();
+      document.getElementById('btn-aspect-9-16')?.click();
+      appendCopilotMessage('ai', '🚀 Executei os dois comandos juntos: silêncios cortados e formato ajustado para 9:16 Vertical!', {
+        btnText: "✨ Aplicar Karaokê Hormozi",
+        action: COPILOT_KB.como_fazer_karaoke.action
+      });
+      return;
+    }
+
+    if (query.includes('emoji') || query.includes('emoticon') || query.includes('figura')) {
+      appendCopilotMessage('ai', COPILOT_KB.inserir_emojis.answer, COPILOT_KB.inserir_emojis);
+    } else if (query.includes('retenção') || query.includes('retencao') || query.includes('engaja') || query.includes('ritmo') || query.includes('ppm') || query.includes('analis')) {
+      const diag = analyzeEngagement();
+      const text = `📊 Análise de Retenção & Ritmo:\n• Pontuação Estimada: ${diag.score}/100\n• Velocidade: ${diag.wpm} PPM\n${diag.tips.map(t => '• ' + t).join('\n')}`;
+      appendCopilotMessage('ai', text, COPILOT_KB.analise_engajamento);
+    } else if (query.includes('salvar projeto') || query.includes('salvar') || query.includes('.clipcut') || query.includes('guardar projeto')) {
+      appendCopilotMessage('ai', COPILOT_KB.salvar_projeto.answer, COPILOT_KB.salvar_projeto);
+    } else if (query.includes('arrast') || query.includes('mover') || query.includes('posic') || query.includes('canvas') || query.includes('onde fica') || query.includes('lugar')) {
+      appendCopilotMessage('ai', COPILOT_KB.arrastar_legenda.answer, COPILOT_KB.arrastar_legenda);
+    } else if (query.includes('desfazer') || query.includes('refazer') || query.includes('ctrl+z') || query.includes('voltar')) {
+      appendCopilotMessage('ai', COPILOT_KB.desfazer_acao.answer, COPILOT_KB.desfazer_acao);
+    } else if (query.includes('cortar video') || query.includes('cortar o video') || query.includes('cortar') || query.includes('dividir') || query.includes('trecho') || query.includes('segmento') || query.includes('trim') || query.includes('split')) {
       appendCopilotMessage('ai', COPILOT_KB.como_cortar_video.answer, COPILOT_KB.como_cortar_video);
     } else if (query.includes('atalho') || query.includes('teclado') || query.includes('tecla') || query.includes('letra s') || query.includes('delete') || query.includes('espaço') || query.includes('espaco')) {
       appendCopilotMessage('ai', COPILOT_KB.atalhos_teclado.answer, COPILOT_KB.atalhos_teclado);
@@ -1616,7 +2156,7 @@ function handleCopilotQuery(keyOrText) {
       appendCopilotMessage('ai', COPILOT_KB.traducao_ingles_portugues.answer, COPILOT_KB.traducao_ingles_portugues);
     } else if (query.includes('fora da tela') || query.includes('cortada') || query.includes('cortando') || query.includes('caber') || query.includes('margem') || query.includes('tamanho') || query.includes('fonte') || query.includes('limite') || query.includes('evitar')) {
       appendCopilotMessage('ai', COPILOT_KB.evitar_corte_legendas.answer, COPILOT_KB.evitar_corte_legendas);
-    } else if (query.includes('export') || query.includes('mp4') || query.includes('webm') || query.includes('salvar') || query.includes('baixar video') || query.includes('render')) {
+    } else if (query.includes('export') || query.includes('mp4') || query.includes('webm') || query.includes('baixar video') || query.includes('render')) {
       appendCopilotMessage('ai', COPILOT_KB.exportar_video.answer, COPILOT_KB.exportar_video);
     } else if (query.includes('transcrev') || query.includes('áudio') || query.includes('audio') || query.includes('voz') || query.includes('ouvir') || query.includes('falar') || query.includes('whisper')) {
       appendCopilotMessage('ai', COPILOT_KB.transcrever_audio.answer, COPILOT_KB.transcrever_audio);
@@ -1637,9 +2177,9 @@ function handleCopilotQuery(keyOrText) {
     } else if (query.includes('srt') || query.includes('subrip') || query.includes('import')) {
       appendCopilotMessage('ai', COPILOT_KB.importar_srt.answer, COPILOT_KB.importar_srt);
     } else {
-      appendCopilotMessage('ai', `Com o ClipCut você pode editar e animar seu vídeo com total privacidade 100% offline. Você pode cortar vídeos na timeline (tecla S), gerar legendas Karaokê com Whisper IA, traduzir inglês para português e exportar o MP4 final!`, {
-        btnText: "✂️ Como cortar o vídeo?",
-        action: COPILOT_KB.como_cortar_video.action
+      appendCopilotMessage('ai', `Com o ClipCut você pode cortar vídeos na timeline (tecla S), inserir emojis com IA, gerar legendas Karaokê com Whisper, arrastar legendas no canvas e exportar projetos .clipcut ou vídeos MP4!`, {
+        btnText: "✨ Inserir Emojis Inteligentes",
+        action: COPILOT_KB.inserir_emojis.action
       });
     }
   }, 240);

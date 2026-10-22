@@ -17,14 +17,14 @@ platform: linux
 version: ${VERSION}
 section: video
 priority: optional
-maintainer: Concat contributors <jub0trd@gmail.com>
-vendor: Concat contributors
-homepage: https://github.com/jub0t/Concat
+maintainer: 4u-Labs <contato@4u.ia.br>
+vendor: 4u-Labs
+homepage: https://4u.ia.br/app/clipcut/
 license: AGPL-3.0-or-later
 description: |
-  Free and open source video editor.
+  ClipCut Studio — Free and open source video editor & AI karaoke captions studio.
   Timeline editing, effects, transitions, titles, captions and speech,
-  with FFmpeg underneath and hardware-accelerated preview and export.
+  with FFmpeg underneath and hardware-accelerated preview and export (4u-Labs).
 
 contents:
   - src: concat

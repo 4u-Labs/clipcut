@@ -33,13 +33,13 @@
 ; One id for the life of the product, so an install over an older one is
 ; an upgrade and not a second copy.
 AppId={{7B1E5C3A-3B9E-4F0B-9C6D-2F1D0C0A0C47}
-AppName=Concat
+AppName=ClipCut Studio
 AppVersion={#Version}
-AppVerName=Concat {#Version}
-AppPublisher=Concat contributors
-AppPublisherURL=https://github.com/jub0t/Concat
-AppSupportURL=https://github.com/jub0t/Concat/issues
-AppUpdatesURL=https://github.com/jub0t/Concat/releases
+AppVerName=ClipCut Studio {#Version}
+AppPublisher=4u-Labs
+AppPublisherURL=https://4u.ia.br/app/clipcut/
+AppSupportURL=https://4u.ia.br/app/clipcut/
+AppUpdatesURL=https://github.com/4u-Labs/clipcut/releases
 DefaultDirName={autopf}\Concat
 DefaultGroupName=Concat
 DisableProgramGroupPage=yes

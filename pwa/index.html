@@ -12,7 +12,7 @@
   <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png" />
   <link rel="icon" type="image/png" sizes="64x64" href="favicon.png" />
   <link rel="apple-touch-icon" href="icon-192.png" />
-  <link rel="stylesheet" href="styles.css?v=3.0" />
+  <link rel="stylesheet" href="styles.css?v=3.1" />
 </head>
 <body>
 
@@ -448,6 +448,8 @@
         <button id="btn-aspect-9-16" class="tool-pill" title="9:16 (1080x1920)">📱 9:16 Vertical</button>
         <button id="btn-cut-silences" class="tool-pill" title="Auto Silence Cutter">✂️ <span data-pt="Cortar Silêncios" data-en="Cut Silences">Cortar Silêncios</span></button>
         <button id="btn-punch-zoom" class="tool-pill" title="Punch-In Zoom">🎯 <span data-pt="Zoom Dinâmico" data-en="Punch-In Zoom">Zoom Dinâmico</span></button>
+        <button id="btn-undo-top" class="tool-pill" type="button" title="Desfazer última alteração (Ctrl+Z)">↩️ <span data-pt="Desfazer" data-en="Undo">Desfazer</span></button>
+        <button id="btn-redo-top" class="tool-pill" type="button" title="Refazer alteração (Ctrl+Y)">↪️ <span data-pt="Refazer" data-en="Redo">Refazer</span></button>
         <button id="btn-open-copilot" class="tool-pill tool-pill-accent" title="Copiloto IA Local">✨ <span data-pt="Copiloto IA" data-en="AI Copilot">Copiloto IA</span></button>
       </div>
       <div class="topbar-right">
@@ -471,6 +473,13 @@
             <strong data-pt="Importar Vídeo ou Áudio" data-en="Import Video or Audio">Importar Vídeo ou Áudio</strong>
             <small data-pt="MP4, MOV, WebM (100% local)" data-en="MP4, MOV, WebM (100% local)">MP4, MOV, WebM (100% local)</small>
           </label>
+          <div class="project-actions-row">
+            <button id="btn-save-project" class="btn-ghost-sm" type="button" title="Salvar projeto completo .clipcut">💾 <span data-pt="Salvar .clipcut" data-en="Save .clipcut">Salvar .clipcut</span></button>
+            <label class="btn-ghost-sm" for="project-upload" title="Abrir projeto .clipcut salvo">
+              📂 <span data-pt="Abrir .clipcut" data-en="Open .clipcut">Abrir .clipcut</span>
+              <input id="project-upload" type="file" accept=".clipcut,.json" hidden />
+            </label>
+          </div>
         </div>
 
         <div class="panel-section">
@@ -617,6 +626,15 @@
           </button>
           <button id="btn-delete-segment" type="button" class="tool-btn-sm btn-danger-sm" title="Excluir trecho selecionado (Del)">
             🗑️ <span data-pt="Excluir Trecho" data-en="Delete Clip">Excluir Trecho</span>
+          </button>
+          <button id="btn-auto-emojis" type="button" class="tool-btn-sm tool-btn-accent" title="Inserir emojis inteligentes de alto impacto nas falas">
+            ✨ <span data-pt="Emojis IA" data-en="AI Emojis">Emojis IA</span>
+          </button>
+          <button id="btn-undo" type="button" class="tool-btn-sm" title="Desfazer última alteração (Ctrl+Z)">
+            ↩️ <span data-pt="Desfazer" data-en="Undo">Desfazer</span>
+          </button>
+          <button id="btn-redo" type="button" class="tool-btn-sm" title="Refazer alteração (Ctrl+Y)">
+            ↪️ <span data-pt="Refazer" data-en="Redo">Refazer</span>
           </button>
           <button id="btn-reset-cuts" type="button" class="tool-btn-sm" title="Restaurar vídeo original sem cortes">
             🔄 <span data-pt="Restaurar" data-en="Reset">Restaurar</span>
@@ -817,6 +835,10 @@
       <div class="copilot-chips-grid">
         <button type="button" class="copilot-chip" data-query="como_cortar_video">✂️ Como cortar o vídeo?</button>
         <button type="button" class="copilot-chip" data-query="atalhos_teclado">⌨️ Atalhos (S, Del, Espaço)</button>
+        <button type="button" class="copilot-chip" data-query="inserir_emojis">✨ Emojis Automáticos?</button>
+        <button type="button" class="copilot-chip" data-query="analise_engajamento">📈 Analisar Retenção &amp; Ritmo?</button>
+        <button type="button" class="copilot-chip" data-query="salvar_projeto">💾 Salvar Projeto (.clipcut)?</button>
+        <button type="button" class="copilot-chip" data-query="arrastar_legenda">🖱️ Posicionar no Canvas?</button>
         <button type="button" class="copilot-chip" data-query="traducao_ingles_portugues">🌐 Áudio Inglês p/ PT?</button>
         <button type="button" class="copilot-chip" data-query="exportar_video">🎬 Como exportar MP4?</button>
         <button type="button" class="copilot-chip" data-query="evitar_corte_legendas">🛡️ Evitar corte de legenda?</button>
@@ -848,6 +870,6 @@
   </aside>
 
   <div id="toast" class="toast hidden"></div>
-  <script src="app.js?v=3.0"></script>
+  <script src="app.js?v=3.1"></script>
 </body>
 </html>

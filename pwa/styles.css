@@ -1910,3 +1910,80 @@ textarea {
   background: rgba(255, 75, 75, 0.2);
   border-color: #ff4444;
 }
+
+/* ── 12. PROJECT ACTIONS, TOOL ACCENTS & WAVEFORM VISUALIZATION ───────── */
+.project-actions-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.btn-ghost-sm {
+  flex: 1;
+  text-align: center;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 0.74rem;
+  cursor: pointer;
+  color: var(--text);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  transition: all 0.15s ease;
+}
+
+.btn-ghost-sm:hover {
+  background: rgba(0, 240, 255, 0.15);
+  border-color: var(--cyan);
+  color: #fff;
+}
+
+.tool-btn-accent {
+  background: linear-gradient(135deg, rgba(255, 222, 0, 0.18), rgba(255, 120, 0, 0.18));
+  border-color: var(--yellow) !important;
+  color: var(--yellow) !important;
+}
+
+.tool-btn-accent:hover {
+  background: rgba(255, 222, 0, 0.35) !important;
+  color: #fff !important;
+}
+
+.video-segment-pill {
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.video-segment-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.segment-waveform-canvas {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  opacity: 0.45;
+  z-index: 1;
+}
+
+#preview-canvas {
+  cursor: grab;
+  transition: cursor 0.1s ease;
+}
+
+#preview-canvas.is-dragging {
+  cursor: grabbing !important;
+}
