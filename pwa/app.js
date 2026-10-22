@@ -836,7 +836,45 @@ document.getElementById('srt-upload').addEventListener('change', async (e) => {
   }
 });
 
-document.getElementById('btn-export-video').addEventListener('click', () => {
+// ── 6c. EXPORTAÇÃO: VÍDEO RENDERIZADO (MP4/WEBM) E LEGENDAS (.SRT) ───────────
+const modalExport = document.getElementById('modal-export');
+const btnCloseExport = document.getElementById('btn-close-export');
+const btnExportVideo = document.getElementById('btn-export-video');
+const btnQuickExportSrt = document.getElementById('btn-quick-export-srt');
+const btnModalExportSrt = document.getElementById('btn-modal-export-srt');
+const btnStartRenderVideo = document.getElementById('btn-start-render-video');
+const btnCancelRenderVideo = document.getElementById('btn-cancel-render-video');
+const exportProgBox = document.getElementById('export-video-progress-box');
+const exportProgBar = document.getElementById('export-video-progress-bar');
+const exportProgText = document.getElementById('export-video-status-text');
+const exportProgPct = document.getElementById('export-video-pct');
+
+function openExportModal() {
+  if (modalExport) modalExport.classList.remove('hidden');
+}
+
+function closeExportModal() {
+  if (modalExport) modalExport.classList.add('hidden');
+  if (isExportingVideo) cancelVideoExport();
+}
+
+if (btnExportVideo) {
+  btnExportVideo.addEventListener('click', openExportModal);
+}
+if (btnCloseExport) {
+  btnCloseExport.addEventListener('click', closeExportModal);
+}
+if (modalExport) {
+  modalExport.addEventListener('click', (e) => {
+    if (e.target === modalExport) closeExportModal();
+  });
+}
+
+function downloadSrtFile() {
+  if (!state.phrases || state.phrases.length === 0) {
+    showToast('Nenhuma legenda para exportar. Gere ou digite as legendas primeiro.');
+    return;
+  }
   let srt = '';
   state.phrases.forEach((p, idx) => {
     const fmtSrt = (sec) => {
@@ -853,8 +891,183 @@ document.getElementById('btn-export-video').addEventListener('click', () => {
   a.href = URL.createObjectURL(blob);
   a.download = 'clipcut-karaoke.srt';
   a.click();
-  showToast('Legendas exportadas! Para renderização MP4 via GPU, baixe o App Nativo.');
-});
+  showToast('📄 Arquivo de legendas .SRT baixado com sucesso!');
+}
+
+if (btnQuickExportSrt) {
+  btnQuickExportSrt.addEventListener('click', downloadSrtFile);
+}
+if (btnModalExportSrt) {
+  btnModalExportSrt.addEventListener('click', () => {
+    downloadSrtFile();
+    closeExportModal();
+  });
+}
+
+let isExportingVideo = false;
+let exportRecorder = null;
+let exportCheckInterval = null;
+
+function cancelVideoExport() {
+  if (!isExportingVideo) return;
+  isExportingVideo = false;
+  if (exportCheckInterval) clearInterval(exportCheckInterval);
+  if (exportRecorder && exportRecorder.state !== 'inactive') {
+    try { exportRecorder.stop(); } catch(e){}
+  }
+  if (state.hasVideo) videoEl.pause();
+  state.playing = false;
+  if (exportProgBox) exportProgBox.classList.add('hidden');
+  if (btnStartRenderVideo) {
+    btnStartRenderVideo.disabled = false;
+    btnStartRenderVideo.innerHTML = '🎬 <span data-pt="Renderizar e Baixar Vídeo" data-en="Render &amp; Download Video">Renderizar e Baixar Vídeo</span>';
+  }
+  showToast('Renderização de vídeo cancelada.');
+}
+
+if (btnCancelRenderVideo) {
+  btnCancelRenderVideo.addEventListener('click', cancelVideoExport);
+}
+
+async function startVideoExport() {
+  if (isExportingVideo) return;
+
+  if (exportProgBox) exportProgBox.classList.remove('hidden');
+  if (exportProgBar) exportProgBar.style.width = '0%';
+  if (exportProgPct) exportProgPct.textContent = '0%';
+  if (exportProgText) exportProgText.textContent = 'Iniciando captura de vídeo e legendas...';
+
+  if (btnStartRenderVideo) {
+    btnStartRenderVideo.disabled = true;
+    btnStartRenderVideo.textContent = '⏳ Renderizando Vídeo no Navegador...';
+  }
+
+  isExportingVideo = true;
+
+  try {
+    const canvasStream = canvas.captureStream(30);
+    const tracks = [...canvasStream.getVideoTracks()];
+
+    if (state.hasVideo && videoEl.src) {
+      try {
+        let aTracks = [];
+        if (typeof videoEl.captureStream === 'function') {
+          aTracks = videoEl.captureStream().getAudioTracks();
+        } else if (typeof videoEl.mozCaptureStream === 'function') {
+          aTracks = videoEl.mozCaptureStream().getAudioTracks();
+        }
+        if (aTracks.length > 0) tracks.push(aTracks[0]);
+      } catch (err) {
+        console.warn('Audio captureStream failed:', err);
+      }
+    }
+
+    const combinedStream = new MediaStream(tracks);
+
+    let mimeType = 'video/webm;codecs=vp9,opus';
+    let ext = 'webm';
+    if (typeof MediaRecorder !== 'undefined') {
+      if (MediaRecorder.isTypeSupported('video/mp4;codecs=avc1.42E01E,mp4a.40.2')) {
+        mimeType = 'video/mp4;codecs=avc1.42E01E,mp4a.40.2';
+        ext = 'mp4';
+      } else if (MediaRecorder.isTypeSupported('video/mp4')) {
+        mimeType = 'video/mp4';
+        ext = 'mp4';
+      } else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')) {
+        mimeType = 'video/webm;codecs=vp9,opus';
+        ext = 'webm';
+      } else if (MediaRecorder.isTypeSupported('video/webm')) {
+        mimeType = 'video/webm';
+        ext = 'webm';
+      }
+    }
+
+    const recordedChunks = [];
+    exportRecorder = new MediaRecorder(combinedStream, {
+      mimeType,
+      videoBitsPerSecond: 6000000
+    });
+
+    exportRecorder.ondataavailable = (e) => {
+      if (e.data && e.data.size > 0) {
+        recordedChunks.push(e.data);
+      }
+    };
+
+    exportRecorder.onstop = () => {
+      isExportingVideo = false;
+      if (exportCheckInterval) clearInterval(exportCheckInterval);
+      if (btnStartRenderVideo) {
+        btnStartRenderVideo.disabled = false;
+        btnStartRenderVideo.innerHTML = '🎬 <span data-pt="Renderizar e Baixar Vídeo" data-en="Render &amp; Download Video">Renderizar e Baixar Vídeo</span>';
+      }
+      if (exportProgText) exportProgText.textContent = 'Renderização concluída com sucesso!';
+      if (exportProgBar) exportProgBar.style.width = '100%';
+      if (exportProgPct) exportProgPct.textContent = '100%';
+
+      if (recordedChunks.length > 0) {
+        const blob = new Blob(recordedChunks, { type: mimeType });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `clipcut-video-${Date.now()}.${ext}`;
+        a.click();
+        showToast(`✨ Vídeo exportado com sucesso (.${ext.toUpperCase()})!`);
+      } else {
+        showToast('Nenhum dado gerado. Tente exportar .SRT ou usar o App Nativo.');
+      }
+
+      setTimeout(() => {
+        if (exportProgBox) exportProgBox.classList.add('hidden');
+        closeExportModal();
+      }, 2000);
+    };
+
+    // Prepare timeline and start recording
+    seekTo(0);
+    exportRecorder.start(250);
+
+    const totalDur = Math.max(1.0, state.duration);
+
+    if (state.hasVideo) {
+      videoEl.currentTime = 0;
+      await videoEl.play();
+      state.playing = true;
+    } else {
+      state.playing = true;
+    }
+
+    exportCheckInterval = setInterval(() => {
+      if (!isExportingVideo) {
+        clearInterval(exportCheckInterval);
+        return;
+      }
+      const cur = state.currentTime;
+      const pct = Math.min(100, Math.round((cur / totalDur) * 100));
+      if (exportProgBar) exportProgBar.style.width = `${pct}%`;
+      if (exportProgPct) exportProgPct.textContent = `${pct}%`;
+      if (exportProgText) exportProgText.textContent = `Renderizando vídeo: ${cur.toFixed(1)}s / ${totalDur.toFixed(1)}s`;
+
+      if (cur >= totalDur || (state.hasVideo && videoEl.ended)) {
+        clearInterval(exportCheckInterval);
+        if (state.hasVideo) videoEl.pause();
+        state.playing = false;
+        if (exportRecorder && exportRecorder.state !== 'inactive') {
+          exportRecorder.stop();
+        }
+      }
+    }, 120);
+
+  } catch (err) {
+    console.error('Video export error:', err);
+    cancelVideoExport();
+    showToast('Navegador não suporta gravação direta de vídeo. Use "Baixar Arquivo .SRT".');
+  }
+}
+
+if (btnStartRenderVideo) {
+  btnStartRenderVideo.addEventListener('click', startVideoExport);
+}
 
 // ── 7. BILINGUAL PT / EN SWITCH & 4U-LABS ECOSYSTEM MODAL ──────────────────
 function setAppLanguage(lang) {

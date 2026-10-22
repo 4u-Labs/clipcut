@@ -11,7 +11,7 @@
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" type="image/svg+xml" href="icon.svg" />
   <link rel="apple-touch-icon" href="icon.svg" />
-  <link rel="stylesheet" href="styles.css?v=2.5" />
+  <link rel="stylesheet" href="styles.css?v=2.6" />
 </head>
 <body>
 
@@ -494,6 +494,9 @@
               📄 <span data-pt="Importar .SRT" data-en="Import .SRT">Importar .SRT</span>
               <input id="srt-upload" type="file" accept=".srt" hidden />
             </label>
+            <button id="btn-quick-export-srt" class="btn-ghost-block" type="button" title="Baixar arquivo de legendas .SRT">
+              💾 <span data-pt="Baixar .SRT" data-en="Download .SRT">Baixar .SRT</span>
+            </button>
           </div>
 
           <div class="field-group" style="margin-top: 10px;">
@@ -658,6 +661,83 @@
   </div>
 
   <!-- ═══════════════════════════════════════════════════════════════════════
+       MODAL DE EXPORTAÇÃO (VÍDEO MP4 / WEBM & LEGENDAS .SRT)
+       ═══════════════════════════════════════════════════════════════════════ -->
+  <div id="modal-export" class="modal-backdrop hidden">
+    <div class="modal-card modal-export-card">
+      <div class="modal-header">
+        <div>
+          <span class="gate-badge" data-pt="Exportar Projeto" data-en="Export Project">Exportar Projeto</span>
+          <h3 class="modal-title-lg" data-pt="Como você deseja exportar seu vídeo?"
+              data-en="How would you like to export your video?">
+            Como você deseja exportar seu vídeo?
+          </h3>
+          <p class="modal-sub"
+             data-pt="Exporte o vídeo completo com legendas queimadas ou baixe o arquivo .SRT sincronizado."
+             data-en="Export the complete video with burned-in subtitles or download the synchronized .SRT file.">
+            Exporte o vídeo completo com legendas queimadas ou baixe o arquivo .SRT sincronizado.
+          </p>
+        </div>
+        <button id="btn-close-export" class="modal-close" type="button">✕</button>
+      </div>
+
+      <div class="export-options-grid">
+        <!-- Opção 1: Vídeo Renderizado com Legendas -->
+        <div class="export-option-card active-card">
+          <div class="export-card-icon">🎬</div>
+          <div class="export-card-body">
+            <h4 data-pt="Vídeo Completo com Legendas Queimadas (MP4 / WebM)" data-en="Full Video with Burned-in Subtitles (MP4 / WebM)">Vídeo Completo com Legendas Queimadas (MP4 / WebM)</h4>
+            <p data-pt="Grava e renderiza seu vídeo com as legendas Karaokê animadas e o áudio original direto no navegador." data-en="Records and renders your video with animated Karaoke captions and original audio directly in your browser.">
+              Grava e renderiza seu vídeo com as legendas Karaokê animadas e o áudio original direto no navegador.
+            </p>
+            <div id="export-video-progress-box" class="export-progress-box hidden">
+              <div class="progress-bar-wrap">
+                <div id="export-video-progress-bar" class="progress-bar-fill" style="width: 0%"></div>
+              </div>
+              <div class="export-status-line">
+                <span id="export-video-status-text">Gravando e renderizando vídeo...</span>
+                <span id="export-video-pct">0%</span>
+              </div>
+              <button id="btn-cancel-render-video" type="button" class="btn-cancel-export">✕ <span data-pt="Cancelar Renderização" data-en="Cancel Render">Cancelar Renderização</span></button>
+            </div>
+            <button id="btn-start-render-video" type="button" class="btn-hero-primary" style="margin-top: 10px; width: 100%;">
+              🎬 <span data-pt="Renderizar e Baixar Vídeo" data-en="Render & Download Video">Renderizar e Baixar Vídeo</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Opção 2: Arquivo .SRT -->
+        <div class="export-option-card">
+          <div class="export-card-icon">📄</div>
+          <div class="export-card-body">
+            <h4 data-pt="Apenas Arquivo de Legendas (.SRT)" data-en="Subtitle File Only (.SRT)">Apenas Arquivo de Legendas (.SRT)</h4>
+            <p data-pt="Baixa o arquivo .SRT com todos os timestamps sincronizados para usar no Premiere, DaVinci Resolve, CapCut ou YouTube." data-en="Download synchronized .SRT file to import into Premiere, DaVinci Resolve, CapCut or YouTube.">
+              Baixa o arquivo .SRT com todos os timestamps sincronizados para usar no Premiere, DaVinci Resolve, CapCut ou YouTube.
+            </p>
+            <button id="btn-modal-export-srt" type="button" class="btn-ghost-block" style="margin-top: 10px; width: 100%;">
+              💾 <span data-pt="Baixar Arquivo .SRT" data-en="Download .SRT File">Baixar Arquivo .SRT</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Opção 3: App Desktop GPU -->
+        <div class="export-option-card">
+          <div class="export-card-icon">⚡</div>
+          <div class="export-card-body">
+            <h4 data-pt="Renderização Nativa por GPU (App Desktop)" data-en="Native GPU Rendering (Desktop App)">Renderização Nativa por GPU (App Desktop)</h4>
+            <p data-pt="Aceleração de hardware (NVIDIA CUDA / Intel / AMD / Metal) para renderizar vídeos 4K a 60fps instantaneamente." data-en="Hardware acceleration (NVIDIA CUDA / Intel / AMD / Metal) to render 4K 60fps videos instantly.">
+              Aceleração de hardware (NVIDIA CUDA / Intel / AMD / Metal) para renderizar vídeos 4K a 60fps instantaneamente.
+            </p>
+            <button type="button" class="btn-ghost-block js-open-download-modal" style="margin-top: 10px; width: 100%;">
+              ⬇️ <span data-pt="Baixar ClipCut Nativo" data-en="Download Native ClipCut">Baixar ClipCut Nativo</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
        5. COPILOTO IA CLIPCUT (DIAGNÓSTICO EM TEMPO REAL & AJUDA LOCAL)
        ═══════════════════════════════════════════════════════════════════════ -->
   <aside id="copilot-drawer" class="copilot-drawer hidden">
@@ -736,6 +816,6 @@
   </aside>
 
   <div id="toast" class="toast hidden"></div>
-  <script src="app.js?v=2.5"></script>
+  <script src="app.js?v=2.6"></script>
 </body>
 </html>

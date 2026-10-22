@@ -1714,3 +1714,91 @@ textarea {
     overflow-y: auto;
   }
 }
+
+/* ── EXPORT MODAL & VIDEO RENDERER ───────────────────────────────────────── */
+.modal-export-card {
+  max-width: 580px;
+}
+
+.export-options-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.export-option-card {
+  display: flex;
+  gap: 14px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px;
+  transition: all 0.2s ease;
+}
+
+.export-option-card:hover {
+  border-color: rgba(0, 240, 255, 0.45);
+}
+
+.export-option-card.active-card {
+  border-color: var(--cyan);
+  background: linear-gradient(135deg, rgba(0, 240, 255, 0.08), rgba(124, 92, 255, 0.08));
+}
+
+.export-card-icon {
+  font-size: 1.8rem;
+  line-height: 1;
+}
+
+.export-card-body {
+  flex: 1;
+}
+
+.export-card-body h4 {
+  margin: 0 0 6px 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.export-card-body p {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.export-progress-box {
+  margin-top: 12px;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 8px;
+  padding: 10px 12px;
+  border: 1px solid rgba(0, 240, 255, 0.35);
+}
+
+.export-status-line {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  font-size: 0.8rem;
+  color: var(--cyan);
+  font-weight: 700;
+}
+
+.btn-cancel-export {
+  margin-top: 8px;
+  background: transparent;
+  border: 1px solid rgba(255, 75, 75, 0.5);
+  color: #ff6b6b;
+  font-size: 0.75rem;
+  padding: 5px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-cancel-export:hover {
+  background: rgba(255, 75, 75, 0.2);
+  border-color: #ff4444;
+}
