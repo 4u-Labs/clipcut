@@ -159,7 +159,7 @@ const state = {
   rhythm: 'karaoke',
   preset: 'hormozi',
   anim: 'pop',
-  fontSize: 54,
+  fontSize: 36,
   posY: 0.82,
   baseColor: '#FFFFFF',
   hlColor: '#FFDE00',
@@ -182,10 +182,27 @@ function buildCaptionsFromText(rawText) {
     return;
   }
 
-  const groupSize = state.rhythm === 'standard' ? 7 : state.rhythm === 'dynamic' ? 3 : 4;
+  const isVertical = canvas.height > canvas.width;
+  const maxWords = state.rhythm === 'standard' ? 6 : state.rhythm === 'dynamic' ? 2 : (isVertical ? 3 : 4);
+  const maxChars = isVertical ? 22 : 36;
+
   const groups = [];
-  for (let i = 0; i < words.length; i += groupSize) {
-    groups.push(words.slice(i, i + groupSize));
+  let currentGroup = [];
+  let currentChars = 0;
+
+  for (const w of words) {
+    const nextChars = currentChars + (currentGroup.length > 0 ? 1 : 0) + w.length;
+    if (currentGroup.length >= maxWords || (currentGroup.length >= 2 && nextChars > maxChars)) {
+      groups.push(currentGroup);
+      currentGroup = [w];
+      currentChars = w.length;
+    } else {
+      currentGroup.push(w);
+      currentChars = nextChars;
+    }
+  }
+  if (currentGroup.length > 0) {
+    groups.push(currentGroup);
   }
 
   const totalDur = Math.max(2.0, state.duration);
@@ -287,61 +304,113 @@ function renderFrame() {
     }
   }
 
-  const fontPx = Math.round(state.fontSize * (h / 720));
+  const isVertical = h > w;
+  const baseDim = isVertical ? w : h;
+  const scaleFactor = baseDim / 720;
+  const adjustedFontSize = isVertical ? Math.round(state.fontSize * 0.88) : state.fontSize;
+  const fontPx = Math.max(16, Math.round(adjustedFontSize * scaleFactor));
+
   ctx.save();
   ctx.font = `900 ${fontPx}px "Inter", "Segoe UI", sans-serif`;
   ctx.textBaseline = 'middle';
 
   const spaceW = ctx.measureText(' ').width;
-  const wordMetrics = activePhrase.words.map(word => {
+  const maxSafeWidth = w * 0.84;
+
+  const wordMetrics = activePhrase.words.map((word, origIdx) => {
     const displayWord = state.preset === 'hormozi' ? word.toUpperCase() : word;
-    return { text: displayWord, width: ctx.measureText(displayWord).width };
+    return {
+      text: displayWord,
+      width: ctx.measureText(displayWord).width,
+      origIdx: origIdx
+    };
   });
 
-  const totalTextW =
+  const totalSingleLineW =
     wordMetrics.reduce((acc, m) => acc + m.width, 0) +
     spaceW * Math.max(0, wordMetrics.length - 1);
+
+  const lines = [];
+  if (totalSingleLineW <= maxSafeWidth || wordMetrics.length <= 1) {
+    lines.push({ words: wordMetrics, width: totalSingleLineW });
+  } else {
+    let curLine = [];
+    let curLineWidth = 0;
+    const halfLen = Math.ceil(wordMetrics.length / 2);
+    for (let i = 0; i < wordMetrics.length; i++) {
+      const m = wordMetrics[i];
+      const needed = curLine.length === 0 ? m.width : (curLineWidth + spaceW + m.width);
+      if (curLine.length > 0 && (needed > maxSafeWidth || (curLine.length >= halfLen && lines.length === 0))) {
+        lines.push({ words: curLine, width: curLineWidth });
+        curLine = [m];
+        curLineWidth = m.width;
+      } else {
+        curLine.push(m);
+        curLineWidth = needed;
+      }
+    }
+    if (curLine.length > 0) {
+      lines.push({ words: curLine, width: curLineWidth });
+    }
+  }
+
+  const maxLineW = Math.max(...lines.map(l => l.width));
+  let safeScale = 1.0;
+  if (maxLineW > maxSafeWidth) {
+    safeScale = maxSafeWidth / maxLineW;
+  }
 
   const centerX = w / 2;
   const centerY = h * state.posY;
 
   ctx.translate(centerX, centerY);
-  ctx.scale(popScale, popScale);
+  ctx.scale(popScale * safeScale, popScale * safeScale);
   ctx.translate(-centerX, -centerY);
+
+  const numLines = lines.length;
+  const lineHeight = fontPx * 1.32;
+  const startY = centerY - ((numLines - 1) * lineHeight) / 2;
 
   if (state.bgBox) {
     const padX = fontPx * 0.45;
-    const padY = fontPx * 0.32;
-    const boxX = centerX - totalTextW / 2 - padX;
-    const boxY = centerY - fontPx / 2 - padY;
-    const boxW = totalTextW + padX * 2;
-    const boxH = fontPx + padY * 2;
-    ctx.fillStyle = state.bgBox;
-    ctx.beginPath();
-    ctx.roundRect(boxX, boxY, boxW, boxH, 14);
-    ctx.fill();
+    const padY = fontPx * 0.28;
+    lines.forEach((line, lIdx) => {
+      const lineY = startY + lIdx * lineHeight;
+      const boxX = centerX - line.width / 2 - padX;
+      const boxY = lineY - fontPx / 2 - padY;
+      const boxW = line.width + padX * 2;
+      const boxH = fontPx + padY * 2;
+      ctx.fillStyle = state.bgBox;
+      ctx.beginPath();
+      ctx.roundRect(boxX, boxY, boxW, boxH, 12);
+      ctx.fill();
+    });
   }
 
-  let cursorX = centerX - totalTextW / 2;
-  wordMetrics.forEach((m, idx) => {
-    const isSpoken = state.rhythm === 'karaoke' && idx === activeWordIdx;
+  lines.forEach((line, lIdx) => {
+    const lineY = startY + lIdx * lineHeight;
+    let cursorX = centerX - line.width / 2;
 
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.75)';
-    ctx.shadowBlur = 8;
-    ctx.shadowOffsetY = 4;
+    line.words.forEach((m) => {
+      const isSpoken = state.rhythm === 'karaoke' && m.origIdx === activeWordIdx;
 
-    if (!state.bgBox) {
-      ctx.lineWidth = Math.max(4, fontPx * 0.16);
-      ctx.lineJoin = 'round';
-      ctx.strokeStyle = state.strokeColor;
-      ctx.strokeText(m.text, cursorX, centerY);
-    }
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.75)';
+      ctx.shadowBlur = 8;
+      ctx.shadowOffsetY = 4;
 
-    ctx.shadowColor = 'transparent';
-    ctx.fillStyle = isSpoken ? state.hlColor : state.baseColor;
-    ctx.fillText(m.text, cursorX, centerY);
+      if (!state.bgBox) {
+        ctx.lineWidth = Math.max(3.5, fontPx * 0.15);
+        ctx.lineJoin = 'round';
+        ctx.strokeStyle = state.strokeColor;
+        ctx.strokeText(m.text, cursorX, lineY);
+      }
 
-    cursorX += m.width + spaceW;
+      ctx.shadowColor = 'transparent';
+      ctx.fillStyle = isSpoken ? state.hlColor : state.baseColor;
+      ctx.fillText(m.text, cursorX, lineY);
+
+      cursorX += m.width + spaceW;
+    });
   });
 
   ctx.restore();
@@ -482,7 +551,8 @@ document.getElementById('btn-aspect-16-9').addEventListener('click', () => {
   canvas.height = 720;
   document.getElementById('btn-aspect-16-9').classList.add('active');
   document.getElementById('btn-aspect-9-16').classList.remove('active');
-  renderFrame();
+  buildCaptionsFromText(scriptInput.value);
+  showToast('Projeto ajustado para Formato Horizontal 16:9 (YouTube)!');
 });
 
 document.getElementById('btn-aspect-9-16').addEventListener('click', () => {
@@ -490,7 +560,7 @@ document.getElementById('btn-aspect-9-16').addEventListener('click', () => {
   canvas.height = 1280;
   document.getElementById('btn-aspect-9-16').classList.add('active');
   document.getElementById('btn-aspect-16-9').classList.remove('active');
-  renderFrame();
+  buildCaptionsFromText(scriptInput.value);
   showToast('Projeto ajustado para Formato Vertical 9:16 (Reels/TikTok)!');
 });
 
@@ -517,6 +587,19 @@ document.getElementById('video-upload').addEventListener('change', (e) => {
     state.hasVideo = true;
     state.duration = Math.max(1.0, videoEl.duration || 10.0);
     scrubber.max = state.duration;
+
+    if (videoEl.videoHeight > videoEl.videoWidth) {
+      canvas.width = 720;
+      canvas.height = 1280;
+      document.getElementById('btn-aspect-9-16').classList.add('active');
+      document.getElementById('btn-aspect-16-9').classList.remove('active');
+    } else {
+      canvas.width = 1280;
+      canvas.height = 720;
+      document.getElementById('btn-aspect-16-9').classList.add('active');
+      document.getElementById('btn-aspect-9-16').classList.remove('active');
+    }
+
     buildCaptionsFromText(scriptInput.value);
     seekTo(0);
     showToast(`Mídia "${file.name}" carregada localmente!`);
