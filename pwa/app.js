@@ -625,3 +625,45 @@
     initCanvas();
   });
 })();
+
+
+// ── 9. BILINGUAL PT / EN SWITCH & 4U-LABS ECOSYSTEM MODAL ──────────────────
+function setAppLanguage(lang) {
+  localStorage.setItem('clipcut_lang', lang);
+  document.documentElement.lang = lang === 'en' ? 'en' : 'pt-BR';
+  document.querySelectorAll('[data-set-lang]').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.setLang === lang);
+  });
+  document.querySelectorAll('[data-pt][data-en]').forEach(el => {
+    el.textContent = lang === 'en' ? el.dataset.en : el.dataset.pt;
+  });
+}
+
+document.querySelectorAll('[data-set-lang]').forEach(btn => {
+  btn.addEventListener('click', () => setAppLanguage(btn.dataset.setLang));
+});
+
+const savedLang = localStorage.getItem('clipcut_lang');
+if (savedLang === 'en' || savedLang === 'pt') {
+  setAppLanguage(savedLang);
+}
+
+const modal4uLabs = document.getElementById('modal-4ulabs');
+const btnOpenGate = document.getElementById('btn-open-4ulabs-gate');
+const btnOpenStudio = document.getElementById('btn-open-4ulabs-studio');
+const btnCloseModal = document.getElementById('btn-close-4ulabs');
+
+if (btnOpenGate && modal4uLabs) {
+  btnOpenGate.addEventListener('click', () => modal4uLabs.classList.remove('hidden'));
+}
+if (btnOpenStudio && modal4uLabs) {
+  btnOpenStudio.addEventListener('click', () => modal4uLabs.classList.remove('hidden'));
+}
+if (btnCloseModal && modal4uLabs) {
+  btnCloseModal.addEventListener('click', () => modal4uLabs.classList.add('hidden'));
+}
+if (modal4uLabs) {
+  modal4uLabs.addEventListener('click', (e) => {
+    if (e.target === modal4uLabs) modal4uLabs.classList.add('hidden');
+  });
+}
