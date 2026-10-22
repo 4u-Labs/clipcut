@@ -11,7 +11,7 @@
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" type="image/svg+xml" href="icon.svg" />
   <link rel="apple-touch-icon" href="icon.svg" />
-  <link rel="stylesheet" href="styles.css?v=2.2" />
+  <link rel="stylesheet" href="styles.css?v=2.3" />
 </head>
 <body>
 
@@ -495,6 +495,25 @@
               <input id="srt-upload" type="file" accept=".srt" hidden />
             </label>
           </div>
+
+          <div class="transcribe-actions-row">
+            <button id="btn-transcribe-video" type="button" class="btn-transcribe-ai">
+              🎙️ <span data-pt="Transcrever Vídeo com IA (Whisper)" data-en="Transcribe Video with AI (Whisper)">Transcrever Vídeo com IA (Whisper)</span>
+            </button>
+            <button id="btn-voice-dictate" type="button" class="btn-dictate" title="Falar no microfone (Ditado)">
+              🎤
+            </button>
+          </div>
+
+          <div id="transcribe-progress-box" class="transcribe-progress-box hidden">
+            <div class="transcribe-status-row">
+              <span id="transcribe-status-text">⏳ Carregando motor Whisper IA...</span>
+              <span id="transcribe-pct">0%</span>
+            </div>
+            <div class="transcribe-bar-outer">
+              <div id="transcribe-progress-bar" class="transcribe-bar-inner"></div>
+            </div>
+          </div>
         </div>
       </aside>
 
@@ -676,6 +695,7 @@
     <div class="copilot-chips-section">
       <span class="chips-label" data-pt="Dúvidas comuns (clique para ação direta):" data-en="Common questions (click for direct action):">Dúvidas comuns (clique para ação direta):</span>
       <div class="copilot-chips-grid">
+        <button type="button" class="copilot-chip" data-query="transcrever_audio">🎙️ Transcrever Áudio?</button>
         <button type="button" class="copilot-chip" data-query="como_fazer_karaoke">🎤 Como fazer Karaokê?</button>
         <button type="button" class="copilot-chip" data-query="cortar_silencios">✂️ Cortar silêncios?</button>
         <button type="button" class="copilot-chip" data-query="formato_916">📱 Mudar para 9:16?</button>
@@ -705,6 +725,6 @@
   </aside>
 
   <div id="toast" class="toast hidden"></div>
-  <script src="app.js?v=2.2"></script>
+  <script src="app.js?v=2.3"></script>
 </body>
 </html>

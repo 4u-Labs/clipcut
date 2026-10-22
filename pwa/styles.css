@@ -956,6 +956,90 @@ textarea {
   cursor: pointer;
 }
 
+.transcribe-actions-row {
+  margin-top: 8px;
+  display: flex;
+  gap: 8px;
+}
+
+.btn-transcribe-ai {
+  flex: 1;
+  background: linear-gradient(135deg, rgba(0, 240, 255, 0.22), rgba(124, 92, 255, 0.32));
+  border: 1px solid var(--cyan);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.78rem;
+  padding: 9px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.btn-transcribe-ai:hover {
+  background: linear-gradient(135deg, rgba(0, 240, 255, 0.4), rgba(124, 92, 255, 0.5));
+  box-shadow: 0 0 14px rgba(0, 240, 255, 0.35);
+  transform: translateY(-1px);
+}
+
+.btn-dictate {
+  background: rgba(27, 32, 48, 0.9);
+  border: 1px solid var(--border);
+  color: var(--yellow);
+  font-size: 1.05rem;
+  padding: 0 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-dictate:hover, .btn-dictate.recording {
+  background: rgba(255, 75, 75, 0.25);
+  border-color: #ff4444;
+  color: #ff4444;
+  animation: pulseDictate 1.2s infinite;
+}
+
+@keyframes pulseDictate {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+.transcribe-progress-box {
+  margin-top: 8px;
+  background: rgba(27, 32, 48, 0.95);
+  border: 1px solid var(--cyan);
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 0.78rem;
+}
+
+.transcribe-status-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+  color: var(--text);
+  font-weight: 600;
+}
+
+.transcribe-bar-outer {
+  background: rgba(11, 13, 19, 0.8);
+  height: 6px;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.transcribe-bar-inner {
+  width: 0%;
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--cyan));
+  transition: width 0.25s ease;
+}
+
 .stage-center {
   background: #080A0E;
   display: flex;

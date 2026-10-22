@@ -505,9 +505,12 @@ document.getElementById('btn-cut-silences').addEventListener('click', () => {
   showToast('✂️ Picos de áudio analisados: pausas silenciosas (>0.40s) removidas com Ripple!');
 });
 
+let currentVideoFile = null;
+
 document.getElementById('video-upload').addEventListener('change', (e) => {
   const file = e.target.files[0];
   if (!file) return;
+  currentVideoFile = file;
   const url = URL.createObjectURL(file);
   videoEl.src = url;
   videoEl.onloadedmetadata = () => {
@@ -517,8 +520,161 @@ document.getElementById('video-upload').addEventListener('change', (e) => {
     buildCaptionsFromText(scriptInput.value);
     seekTo(0);
     showToast(`Mídia "${file.name}" carregada localmente!`);
+    updateCopilotDiagnostics();
   };
 });
+
+// ── 6b. WHISPER IA TRANSCRIÇÃO DE ÁUDIO NO NAVEGADOR & DITADO POR VOZ ──────
+let whisperPipelineInstance = null;
+const transcribeBox = document.getElementById('transcribe-progress-box');
+const transcribeStatus = document.getElementById('transcribe-status-text');
+const transcribePct = document.getElementById('transcribe-pct');
+const transcribeBar = document.getElementById('transcribe-progress-bar');
+const btnTranscribe = document.getElementById('btn-transcribe-video');
+const btnDictate = document.getElementById('btn-voice-dictate');
+
+function setTranscribeProgress(pct, statusText) {
+  if (transcribeBox) transcribeBox.classList.remove('hidden');
+  if (transcribePct) transcribePct.textContent = `${pct}%`;
+  if (transcribeStatus) transcribeStatus.textContent = statusText;
+  if (transcribeBar) transcribeBar.style.width = `${pct}%`;
+}
+
+async function extractAudioChannelData(file) {
+  const AudioCtx = window.AudioContext || window.webkitAudioContext;
+  const ctx = new AudioCtx({ sampleRate: 16000 });
+  const buf = await file.arrayBuffer();
+  const decoded = await ctx.decodeAudioData(buf);
+  let mono;
+  if (decoded.numberOfChannels === 1) {
+    mono = decoded.getChannelData(0);
+  } else {
+    const l = decoded.getChannelData(0);
+    const r = decoded.getChannelData(1);
+    mono = new Float32Array(l.length);
+    for (let i = 0; i < l.length; i++) {
+      mono[i] = (l[i] + r[i]) / 2;
+    }
+  }
+  return mono;
+}
+
+if (btnTranscribe) {
+  btnTranscribe.addEventListener('click', async () => {
+    if (!currentVideoFile) {
+      showToast('Selecione primeiro um arquivo de vídeo ou áudio!');
+      document.getElementById('video-upload').click();
+      return;
+    }
+
+    try {
+      btnTranscribe.disabled = true;
+      setTranscribeProgress(10, 'Extraindo trilha de áudio (16 kHz mono)...');
+      const audioData = await extractAudioChannelData(currentVideoFile);
+
+      setTranscribeProgress(25, 'Carregando motor Whisper IA...');
+      if (!whisperPipelineInstance) {
+        const { pipeline, env } = await import('https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2');
+        env.allowLocalModels = false;
+        whisperPipelineInstance = await pipeline('automatic-speech-recognition', 'Xenova/whisper-tiny', {
+          progress_callback: (prog) => {
+            if (prog.status === 'progress' && prog.total) {
+              const loadedPct = Math.round((prog.loaded / prog.total) * 100);
+              const totalPct = 25 + Math.round((prog.loaded / prog.total) * 45);
+              setTranscribeProgress(totalPct, `Baixando modelo Whisper (${loadedPct}%)...`);
+            }
+          }
+        });
+      }
+
+      setTranscribeProgress(75, 'Transcrevendo voz em Português com Whisper...');
+      const result = await whisperPipelineInstance(audioData, {
+        language: 'portuguese',
+        task: 'transcribe',
+        chunk_length_s: 30,
+        stride_length_s: 5
+      });
+
+      const text = (result && result.text) ? result.text.trim() : '';
+      if (text) {
+        setTranscribeProgress(100, 'Transcrição concluída!');
+        scriptInput.value = text;
+        buildCaptionsFromText(text);
+        showToast('✨ Áudio transcrito com sucesso via Whisper IA!');
+        updateCopilotDiagnostics();
+      } else {
+        showToast('Nenhuma fala detectada com clareza no áudio.');
+      }
+    } catch (err) {
+      console.error('Whisper transcription error:', err);
+      showToast('Erro ao transcrever. Tentando ditado do navegador...');
+    } finally {
+      btnTranscribe.disabled = false;
+      setTimeout(() => {
+        if (transcribeBox) transcribeBox.classList.add('hidden');
+      }, 2500);
+    }
+  });
+}
+
+// Ditado ao vivo pelo Microfone (Web Speech API)
+let speechRecognitionInstance = null;
+let isDictating = false;
+
+if (btnDictate) {
+  const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRec) {
+    btnDictate.title = 'Reconhecimento por microfone não suportado neste navegador.';
+  } else {
+    btnDictate.addEventListener('click', () => {
+      if (isDictating && speechRecognitionInstance) {
+        speechRecognitionInstance.stop();
+        return;
+      }
+      try {
+        speechRecognitionInstance = new SpeechRec();
+        speechRecognitionInstance.lang = 'pt-BR';
+        speechRecognitionInstance.continuous = true;
+        speechRecognitionInstance.interimResults = true;
+
+        speechRecognitionInstance.onstart = () => {
+          isDictating = true;
+          btnDictate.classList.add('recording');
+          showToast('🎙️ Microfone ativo! Fale agora para ditar as legendas...');
+        };
+
+        speechRecognitionInstance.onresult = (evt) => {
+          let fullTranscript = '';
+          for (let i = 0; i < evt.results.length; i++) {
+            fullTranscript += evt.results[i][0].transcript + ' ';
+          }
+          const trimmed = fullTranscript.trim();
+          if (trimmed) {
+            scriptInput.value = trimmed;
+            buildCaptionsFromText(trimmed);
+            updateCopilotDiagnostics();
+          }
+        };
+
+        speechRecognitionInstance.onerror = (err) => {
+          console.warn('Speech recognition error:', err);
+          isDictating = false;
+          btnDictate.classList.remove('recording');
+        };
+
+        speechRecognitionInstance.onend = () => {
+          isDictating = false;
+          btnDictate.classList.remove('recording');
+          showToast('Ditado finalizado e sincronizado no Karaokê!');
+        };
+
+        speechRecognitionInstance.start();
+      } catch (e) {
+        console.error('Dictation error:', e);
+      }
+    });
+  }
+}
 
 document.getElementById('srt-upload').addEventListener('change', async (e) => {
   const file = e.target.files[0];
@@ -711,6 +867,14 @@ const COPILOT_KB = {
     action: () => {
       document.getElementById('srt-upload').click();
     }
+  },
+  transcrever_audio: {
+    answer: "O ClipCut agora transcreve a fala do seu vídeo direto no navegador usando o modelo Whisper IA! Você também pode usar o microfone para ditar falas ao vivo.",
+    btnText: "🎙️ Transcrever Áudio do Vídeo Agora",
+    action: () => {
+      const btn = document.getElementById('btn-transcribe-video');
+      if (btn) btn.click();
+    }
   }
 };
 
@@ -759,7 +923,9 @@ function handleCopilotQuery(keyOrText) {
   appendCopilotMessage('user', keyOrText);
 
   setTimeout(() => {
-    if (query.includes('karaoke') || query.includes('legenda') || query.includes('palavra') || query.includes('cor')) {
+    if (query.includes('transcrev') || query.includes('áudio') || query.includes('audio') || query.includes('voz') || query.includes('ouvir') || query.includes('falar')) {
+      appendCopilotMessage('ai', COPILOT_KB.transcrever_audio.answer, COPILOT_KB.transcrever_audio);
+    } else if (query.includes('karaoke') || query.includes('legenda') || query.includes('palavra') || query.includes('cor')) {
       appendCopilotMessage('ai', COPILOT_KB.como_fazer_karaoke.answer, COPILOT_KB.como_fazer_karaoke);
     } else if (query.includes('silêncio') || query.includes('silencio') || query.includes('pausa') || query.includes('cort')) {
       appendCopilotMessage('ai', COPILOT_KB.cortar_silencios.answer, COPILOT_KB.cortar_silencios);
