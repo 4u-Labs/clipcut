@@ -196,7 +196,7 @@ function drawSegmentWaveform(canvasEl, startSec, endSec, totalSec) {
   ctx.clearRect(0, 0, w, h);
 
   if (!audioWaveformData) {
-    audioWaveformData = generateProceduralWaveform(400);
+    audioWaveformData = generateProceduralWaveform(480);
   }
 
   const allPeaks = audioWaveformData;
@@ -205,24 +205,42 @@ function drawSegmentWaveform(canvasEl, startSec, endSec, totalSec) {
   const startIdx = Math.floor(startRatio * allPeaks.length);
   const endIdx = Math.max(startIdx + 2, Math.floor(endRatio * allPeaks.length));
 
-  const barWidth = 2;
+  const barWidth = 2.5;
   const barGap = 1.5;
   const numBars = Math.max(12, Math.floor(w / (barWidth + barGap)));
 
-  const grad = ctx.createLinearGradient(0, h, 0, 0);
+  const grad = ctx.createLinearGradient(0, 0, 0, h);
   grad.addColorStop(0, '#00F0FF');
-  grad.addColorStop(0.6, '#38BDF8');
+  grad.addColorStop(0.45, '#38BDF8');
+  grad.addColorStop(0.85, '#6366F1');
   grad.addColorStop(1, '#818CF8');
   ctx.fillStyle = grad;
+
+  const baselineY = Math.round(h * 0.72);
 
   for (let i = 0; i < numBars; i++) {
     const progress = i / numBars;
     const peakIdx = Math.floor(startIdx + progress * (endIdx - startIdx));
     const rawVal = allPeaks[Math.min(allPeaks.length - 1, peakIdx)] || 0.20;
-    const barHeight = Math.max(2, rawVal * (h * 0.65));
+    
+    // Main upper bar
+    const barHeight = Math.max(3, Math.round(rawVal * (baselineY - 4)));
     const x = i * (barWidth + barGap);
-    const y = h - barHeight - 2;
-    ctx.fillRect(x, y, barWidth, barHeight);
+    const y = baselineY - barHeight;
+    
+    if (ctx.roundRect) {
+      ctx.beginPath();
+      ctx.roundRect(x, y, barWidth, barHeight, [2, 2, 0, 0]);
+      ctx.fill();
+    } else {
+      ctx.fillRect(x, y, barWidth, barHeight);
+    }
+
+    // Mirrored subtle lower reflection
+    const reflHeight = Math.max(1, Math.round(barHeight * 0.28));
+    ctx.globalAlpha = 0.45;
+    ctx.fillRect(x, baselineY + 1, barWidth, reflHeight);
+    ctx.globalAlpha = 1.0;
   }
 }
 
@@ -416,13 +434,27 @@ function appendPlayheadToLane(laneEl) {
 
 function updatePlayheadNeedles() {
   const totalDur = Math.max(0.1, state.duration);
-  const pct = Math.max(0, Math.min(100, (state.currentTime / totalDur) * 100));
+  const cur = state.currentTime;
+  const pct = Math.max(0, Math.min(100, (cur / totalDur) * 100));
+
   document.querySelectorAll('.timeline-playhead-line').forEach(el => {
     el.style.left = `${pct}%`;
   });
 
+  const rulerNeedleHead = document.getElementById('timeline-ruler-needle-head');
+  if (rulerNeedleHead) {
+    rulerNeedleHead.style.left = `${pct}%`;
+  }
+
+  const timecodeDisp = document.getElementById('timeline-timecode-display');
+  if (timecodeDisp) {
+    const m = Math.floor(cur / 60);
+    const s = Math.floor(cur % 60);
+    const ms = Math.floor((cur % 1) * 10);
+    timecodeDisp.textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}.${ms}`;
+  }
+
   // Highlight active caption pill on timeline
-  const cur = state.currentTime;
   if (captionsLane) {
     const pills = captionsLane.querySelectorAll('.clip-pill');
     state.phrases.forEach((p, idx) => {
@@ -431,6 +463,33 @@ function updatePlayheadNeedles() {
         pills[idx].classList.toggle('active-word', isCur);
       }
     });
+  }
+}
+
+function renderTimelineRuler() {
+  const ticksContainer = document.getElementById('timeline-ruler-ticks');
+  if (!ticksContainer) return;
+  ticksContainer.innerHTML = '';
+  const totalDur = Math.max(0.1, state.duration);
+
+  let stepSec = 1;
+  if (totalDur > 120) stepSec = 20;
+  else if (totalDur > 60) stepSec = 10;
+  else if (totalDur > 30) stepSec = 5;
+  else if (totalDur > 12) stepSec = 2;
+  else stepSec = 1;
+
+  for (let s = 0; s <= totalDur + 0.01; s += stepSec) {
+    const pct = (s / totalDur) * 100;
+    const mark = document.createElement('div');
+    mark.className = 'ruler-mark';
+    mark.style.left = `${pct}%`;
+
+    const m = Math.floor(s / 60);
+    const sec = Math.floor(s % 60);
+    const label = `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+    mark.innerHTML = `<span class="ruler-tick"></span><span class="ruler-num">${label}</span>`;
+    ticksContainer.appendChild(mark);
   }
 }
 
@@ -449,7 +508,7 @@ function renderCaptionsTrack() {
     const widthPct = Math.max(3.5, ((p.end - p.start) / totalDur) * 100);
     pill.style.left = `${leftPct}%`;
     pill.style.width = `calc(${widthPct}% - 2px)`;
-    pill.textContent = p.words.join(' ');
+    pill.innerHTML = `<span>💬</span> <span>${p.words.join(' ')}</span>`;
     pill.title = `Frase ${idx + 1} (${p.start.toFixed(2)}s - ${p.end.toFixed(2)}s): "${p.words.join(' ')}"`;
 
     pill.addEventListener('click', (e) => {
@@ -487,13 +546,13 @@ function renderVideoTrackLane() {
     waveCanvas.className = 'segment-waveform-canvas';
     const segPixelW = Math.max(120, Math.round(laneWidth * (widthPct / 100)));
     waveCanvas.width = segPixelW;
-    waveCanvas.height = 36;
+    waveCanvas.height = 40;
     drawSegmentWaveform(waveCanvas, seg.start, seg.end, totalDur);
     pill.appendChild(waveCanvas);
 
-    const contentDiv = document.createElement('div');
-    contentDiv.className = 'video-segment-content';
-    contentDiv.innerHTML = `<span>🎬 Trecho ${idx + 1} (${(seg.end - seg.start).toFixed(1)}s) ${isSelected ? '<span class="seg-tag-active">ATIVO</span>' : ''}</span>`;
+    const chipDiv = document.createElement('div');
+    chipDiv.className = 'video-segment-chip';
+    chipDiv.innerHTML = `<span>🎬 Trecho ${idx + 1} (${(seg.end - seg.start).toFixed(1)}s)</span> ${isSelected ? '<span class="seg-tag-active">ATIVO</span>' : ''}`;
 
     if (numSegs > 1) {
       const delBtn = document.createElement('button');
@@ -504,9 +563,9 @@ function renderVideoTrackLane() {
         e.stopPropagation();
         deleteSegment(seg.id);
       });
-      contentDiv.appendChild(delBtn);
+      chipDiv.appendChild(delBtn);
     }
-    pill.appendChild(contentDiv);
+    pill.appendChild(chipDiv);
 
     pill.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -763,7 +822,7 @@ function seekTo(t) {
   renderFrame();
 }
 
-[captionsLane, videoLane].forEach(lane => {
+[captionsLane, videoLane, document.getElementById('timeline-ruler-lane')].forEach(lane => {
   if (!lane) return;
   lane.addEventListener('click', (e) => {
     if (e.target.closest('.video-segment-del') || e.target.closest('.clip-pill')) return;
@@ -1396,6 +1455,7 @@ document.getElementById('video-upload').addEventListener('change', (e) => {
       renderVideoTrackLane();
     });
 
+    renderTimelineRuler();
     buildCaptionsFromText(scriptInput.value);
     seekTo(0);
     pushHistoryState();
@@ -2269,6 +2329,12 @@ if (btnCopilotSubmit && inpCopilotQuery) {
   });
 }
 
-// Initialize default Karaoke phrases and video segments
+// Initialize default Karaoke phrases, video segments and time ruler
 buildCaptionsFromText(scriptInput.value);
+renderTimelineRuler();
 renderVideoTrackLane();
+
+window.addEventListener('resize', () => {
+  renderTimelineRuler();
+  renderVideoTrackLane();
+});

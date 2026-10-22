@@ -12,7 +12,7 @@
   <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png" />
   <link rel="icon" type="image/png" sizes="64x64" href="favicon.png" />
   <link rel="apple-touch-icon" href="icon-192.png" />
-  <link rel="stylesheet" href="styles.css?v=3.2" />
+  <link rel="stylesheet" href="styles.css?v=3.3" />
 </head>
 <body>
 
@@ -43,8 +43,12 @@
             🌐 <span data-pt="4u-Labs" data-en="4u-Labs">4u-Labs</span>
           </button>
           <div class="lang-switch">
-            <button type="button" class="lang-btn active" data-set-lang="pt">🇧🇷 PT</button>
-            <button type="button" class="lang-btn" data-set-lang="en">🇺🇸 EN</button>
+            <button type="button" class="lang-btn active" data-set-lang="pt" title="Português (Brasil)">
+              <span class="flag-icon">🇧🇷</span><span class="lang-code">PT</span>
+            </button>
+            <button type="button" class="lang-btn" data-set-lang="en" title="English">
+              <span class="flag-icon">🇺🇸</span><span class="lang-code">EN</span>
+            </button>
           </div>
           <button type="button" class="btn-cta-nav js-open-download-modal">
             ⬇️ <span data-pt="Baixar / Instalar" data-en="Download / Install">Baixar / Instalar</span>
@@ -455,8 +459,12 @@
       <div class="topbar-right">
         <button id="btn-open-4ulabs-studio" class="tool-pill" type="button">🌐 4u-Labs</button>
         <div class="lang-switch">
-          <button type="button" class="lang-btn active" data-set-lang="pt">PT</button>
-          <button type="button" class="lang-btn" data-set-lang="en">EN</button>
+          <button type="button" class="lang-btn active" data-set-lang="pt" title="Português (Brasil)">
+            <span class="flag-icon">🇧🇷</span><span class="lang-code">PT</span>
+          </button>
+          <button type="button" class="lang-btn" data-set-lang="en" title="English">
+            <span class="flag-icon">🇺🇸</span><span class="lang-code">EN</span>
+          </button>
         </div>
         <button id="btn-open-downloads" class="btn-secondary-sm js-open-download-modal">⬇ <span data-pt="Baixar App" data-en="Download App">Baixar App</span></button>
         <button id="btn-export-video" class="btn-primary-sm">🎬 <span data-pt="Exportar Vídeo" data-en="Export Video">Exportar Vídeo</span></button>
@@ -647,12 +655,33 @@
         </div>
       </div>
 
+      <!-- Régua de Tempo Profissional (Timecode Ruler) -->
+      <div class="timeline-ruler-track">
+        <div class="track-header-ruler" title="Tempo Atual de Reprodução">
+          <span class="ruler-icon">⏱️</span>
+          <span id="timeline-timecode-display" class="ruler-timecode">00:00.0</span>
+        </div>
+        <div id="timeline-ruler-lane" class="timeline-ruler-lane" title="Clique para saltar a reprodução (Scrub)">
+          <div id="timeline-ruler-ticks" class="timeline-ruler-ticks"></div>
+          <div id="timeline-ruler-needle-head" class="timeline-ruler-needle-head"></div>
+        </div>
+      </div>
+
+      <!-- Pista de Legendas (CC) -->
       <div class="timeline-track">
-        <span class="track-label" data-pt="💬 Legendas" data-en="💬 Captions">💬 Legendas</span>
+        <div class="track-header-badge track-header-cc" title="Pista de Legendas e Palavras Karaokê">
+          <span class="track-tag track-tag-cc">CC</span>
+          <span class="track-label-text" data-pt="Legendas" data-en="Captions">Legendas</span>
+        </div>
         <div id="captions-track-lane" class="track-lane"></div>
       </div>
+
+      <!-- Pista de Vídeo e Áudio (V1) -->
       <div class="timeline-track">
-        <span class="track-label" data-pt="🎞️ Vídeo" data-en="🎞️ Video">🎞️ Vídeo</span>
+        <div class="track-header-badge track-header-v1" title="Pista de Vídeo, Cortes e Forma de Onda de Áudio">
+          <span class="track-tag track-tag-v1">V1</span>
+          <span class="track-label-text" data-pt="Vídeo &amp; Som" data-en="Video &amp; Audio">Vídeo &amp; Som</span>
+        </div>
         <div id="video-track-lane" class="track-lane">
           <div class="clip-pill video-pill" data-pt="Vídeo Principal (Sincronizado)" data-en="Main Video (Synced)">Vídeo Principal (Sincronizado)</div>
         </div>
@@ -872,6 +901,6 @@
   </aside>
 
   <div id="toast" class="toast hidden"></div>
-  <script src="app.js?v=3.2"></script>
+  <script src="app.js?v=3.3"></script>
 </body>
 </html>
