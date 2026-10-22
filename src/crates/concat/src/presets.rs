@@ -170,7 +170,7 @@ pub fn builtin() -> Vec<TextPreset> {
         include!(concat!(env!("OUT_DIR"), "/text_presets.rs"));
     }
     const CAPCUT_PRESETS: &[&str] = &[
-        r#"
+        r##"
 id = "capcut.hormozi"
 name = "🎤 Hormozi Karaokê"
 sample = "KAR"
@@ -183,8 +183,8 @@ color = "#FFFFFF"
 strokeWidth = 0.012
 strokeColor = "#000000"
 shadow = true
-"#,
-        r#"
+"##,
+        r##"
 id = "capcut.tiktok"
 name = "🎤 TikTok Box"
 sample = "BOX"
@@ -199,8 +199,8 @@ backgroundRadius = 0.018
 backgroundPaddingX = 0.024
 backgroundPaddingY = 0.012
 shadow = false
-"#,
-        r#"
+"##,
+        r##"
 id = "capcut.yellow"
 name = "🎤 Amarelo Pop"
 sample = "POP"
@@ -213,8 +213,8 @@ color = "#FFDE00"
 strokeWidth = 0.014
 strokeColor = "#000000"
 shadow = true
-"#,
-        r#"
+"##,
+        r##"
 id = "capcut.neon"
 name = "🎤 Neon Clean"
 sample = "NEON"
@@ -227,7 +227,7 @@ color = "#00F0FF"
 strokeWidth = 0.012
 strokeColor = "#081020"
 shadow = true
-"#,
+"##,
     ];
     let mut presets: Vec<(i64, TextPreset)> = CAPCUT_PRESETS
         .iter()
