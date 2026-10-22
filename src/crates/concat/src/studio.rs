@@ -5733,9 +5733,91 @@ impl Studio {
     }
 
     /// Applies one of the built-in CapCut visual presets or entrance animations
-    /// across all text clips on the active timeline.
+    /// across all text clips on the active timeline, automatically converting
+    /// plain multi-word captions into word-by-word `*palavra*` Karaoke sub-clips.
     pub fn apply_caption_preset(&mut self, preset: &str) {
         self.flush_commit();
+
+        // Automatically convert any multi-word plain caption clips (without `*palavra*`
+        // karaoke markers) into word-by-word Karaoke sub-clips so 1 click on any
+        // CapCut preset animates existing project captions immediately!
+        if preset != "no_anim" {
+            let plain_multiword_clips: Vec<model::Clip> = self
+                .timeline()
+                .clips
+                .iter()
+                .filter(|c| {
+                    c.kind == model::ClipKind::Text
+                        && c.text.as_ref().is_some_and(|t| {
+                            !t.content.contains('*') && t.content.split_whitespace().count() >= 2
+                        })
+                })
+                .map(|c| (**c).clone())
+                .collect();
+
+            if !plain_multiword_clips.is_empty() {
+                let mut split_cmds = Vec::new();
+                let remove_ids: Vec<String> =
+                    plain_multiword_clips.iter().map(|c| c.id.clone()).collect();
+                split_cmds.push(Command::RemoveClips {
+                    clip_ids: remove_ids,
+                    ripple: false,
+                });
+                for clip in &plain_multiword_clips {
+                    let Some(base_text) = &clip.text else {
+                        continue;
+                    };
+                    let words: Vec<&str> = base_text.content.split_whitespace().collect();
+                    let total_weight: f64 = words
+                        .iter()
+                        .map(|w| w.chars().count().max(2) as f64)
+                        .sum::<f64>()
+                        .max(1.0);
+                    let clip_end = clip.start + clip.duration;
+                    let mut cur_start = clip.start;
+                    let total_words = words.len();
+                    let mut global_idx = 0usize;
+                    for phrase in words.chunks(4) {
+                        for (local_idx, w) in phrase.iter().enumerate() {
+                            global_idx += 1;
+                            let w_weight = w.chars().count().max(2) as f64;
+                            let dur = if global_idx == total_words {
+                                (clip_end - cur_start).max(0.04)
+                            } else {
+                                (clip.duration * (w_weight / total_weight)).max(0.04)
+                            };
+                            let highlighted = phrase
+                                .iter()
+                                .enumerate()
+                                .map(|(i, token)| {
+                                    if i == local_idx {
+                                        format!("*{token}*")
+                                    } else {
+                                        (*token).to_owned()
+                                    }
+                                })
+                                .collect::<Vec<_>>()
+                                .join(" ");
+                            let mut sub_style = base_text.clone();
+                            sub_style.content = highlighted;
+                            split_cmds.push(Command::AddTextClip {
+                                track_id: Some(clip.track_id.clone()),
+                                start: cur_start,
+                                style: Some(sub_style),
+                                duration: Some(dur),
+                                offset_y: Some(clip.offset_y),
+                                above: false,
+                            });
+                            cur_start = (cur_start + dur).min(clip_end);
+                        }
+                    }
+                }
+                self.apply(Command::Batch {
+                    commands: split_cmds,
+                });
+            }
+        }
+
         if preset == "pop" || preset == "no_anim" {
             let mut text_clips: Vec<model::Clip> = self
                 .timeline()
@@ -5751,7 +5833,7 @@ impl Studio {
             let mut commands = Vec::new();
             let count = text_clips.len();
             let mut prev_clean_phrase = String::new();
-            for clip in text_clips {
+            for clip in &text_clips {
                 commands.push(Command::ClearClipKeys {
                     clip_id: clip.id.clone(),
                     property: model::KeyProperty::Scale,
@@ -5803,6 +5885,11 @@ impl Studio {
                 }
             }
             self.apply(Command::Batch { commands });
+            if self.selection.is_empty() || self.sole_selection().and_then(|id| self.clip(&id)).is_none() {
+                if let Some(first) = text_clips.first() {
+                    self.selection = vec![first.id.clone()];
+                }
+            }
             self.notify(&tf("textPanel.allCaptionsUpdated", &[&count]), false);
             return;
         }
@@ -5812,6 +5899,13 @@ impl Studio {
             .first()
             .and_then(|id| self.clip(id))
             .and_then(|c| c.text.clone())
+            .or_else(|| {
+                self.timeline()
+                    .clips
+                    .iter()
+                    .find(|c| c.kind == model::ClipKind::Text)
+                    .and_then(|c| c.text.clone())
+            })
             .or_else(|| self.prefs.title_style.clone())
             .unwrap_or_default();
 
@@ -5859,26 +5953,72 @@ impl Studio {
         self.prefs.title_style = Some(def_style);
         self.prefs.save(&self.host.dirs);
 
+        let mut text_clips: Vec<model::Clip> = self
+            .timeline()
+            .clips
+            .iter()
+            .filter(|c| c.kind == model::ClipKind::Text)
+            .map(|c| (**c).clone())
+            .collect();
+        text_clips.sort_by(|a, b| a.start.total_cmp(&b.start));
+
         let mut commands = Vec::new();
         let mut count = 0usize;
-        for clip in &self.timeline().clips {
-            if clip.kind == model::ClipKind::Text {
-                if let Some(existing_text) = &clip.text {
-                    let mut updated = style.clone();
-                    updated.content = existing_text.content.clone();
-                    commands.push(Command::UpdateClip {
+        let mut prev_clean_phrase = String::new();
+        for clip in &text_clips {
+            if let Some(existing_text) = &clip.text {
+                let mut updated = style.clone();
+                updated.content = existing_text.content.clone();
+                commands.push(Command::UpdateClip {
+                    clip_id: clip.id.clone(),
+                    patch: ClipPatch {
+                        text: Some(Some(updated)),
+                        ..Default::default()
+                    },
+                });
+                // Also apply Pop Elástico entrance on each new phrase by default
+                commands.push(Command::ClearClipKeys {
+                    clip_id: clip.id.clone(),
+                    property: model::KeyProperty::Scale,
+                });
+                let clean_phrase = existing_text.content.replace('*', "").trim().to_owned();
+                if clean_phrase.is_empty() || clean_phrase != prev_clean_phrase {
+                    let dur = clip.duration.max(0.15);
+                    let peak_at = (0.09 / dur).clamp(0.08, 0.45);
+                    let settle_at = (0.18 / dur).clamp(0.16, 0.85);
+                    commands.push(Command::SetClipKey {
                         clip_id: clip.id.clone(),
-                        patch: ClipPatch {
-                            text: Some(Some(updated)),
-                            ..Default::default()
-                        },
+                        property: model::KeyProperty::Scale,
+                        at: 0.0,
+                        value: 0.76,
+                        ease: model::KeyEase::LINEAR,
                     });
-                    count += 1;
+                    commands.push(Command::SetClipKey {
+                        clip_id: clip.id.clone(),
+                        property: model::KeyProperty::Scale,
+                        at: peak_at,
+                        value: 1.08,
+                        ease: model::KeyEase([0.22, 1.0, 0.36, 1.0]),
+                    });
+                    commands.push(Command::SetClipKey {
+                        clip_id: clip.id.clone(),
+                        property: model::KeyProperty::Scale,
+                        at: settle_at,
+                        value: 1.0,
+                        ease: model::KeyEase([0.42, 0.0, 0.58, 1.0]),
+                    });
                 }
+                prev_clean_phrase = clean_phrase;
+                count += 1;
             }
         }
         if !commands.is_empty() {
             self.apply(Command::Batch { commands });
+            if self.selection.is_empty() || self.sole_selection().and_then(|id| self.clip(&id)).is_none() {
+                if let Some(first) = text_clips.first() {
+                    self.selection = vec![first.id.clone()];
+                }
+            }
             self.notify(&tf("textPanel.allCaptionsUpdated", &[&count]), false);
         }
     }

@@ -908,6 +908,17 @@ fn start(project: Option<std::path::PathBuf>, smoke: bool) -> Result<(), slint::
         state.place_at_playhead(&format!("media:{id}"));
     }));
     editor.on_library_add_text(on_window!(|state, preset: SharedString| {
+        if let Some(capcut_kind) = preset.as_str().strip_prefix("capcut.") {
+            if state
+                .timeline()
+                .clips
+                .iter()
+                .any(|c| c.kind == concat_project::model::ClipKind::Text)
+            {
+                state.apply_caption_preset(capcut_kind);
+                return;
+            }
+        }
         state.place_at_playhead(&format!("text:{preset}:Title"));
     }));
     // A figure from the Stickers page, named in the interface's language.
