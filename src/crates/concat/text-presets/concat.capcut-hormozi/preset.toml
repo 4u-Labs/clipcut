@@ -1,0 +1,14 @@
+id = "capcut.hormozi"
+name = "Hormozi Karaoke"
+language = "Latin"
+order = 101
+
+[style]
+content = "Hormozi Karaoke"
+fontFamily = "Hanken Grotesk"
+fontWeight = 900
+fontSize = 0.08
+color = "#FFFFFF"
+strokeWidth = 0.012
+strokeColor = "#000000"
+shadow = true

@@ -5885,7 +5885,12 @@ impl Studio {
                 }
             }
             self.apply(Command::Batch { commands });
-            if self.selection.is_empty() || self.sole_selection().and_then(|id| self.clip(&id)).is_none() {
+            if self.selection.is_empty()
+                || self
+                    .sole_selection()
+                    .and_then(|id| self.clip(&id))
+                    .is_none()
+            {
                 if let Some(first) = text_clips.first() {
                     self.selection = vec![first.id.clone()];
                 }
@@ -6014,7 +6019,12 @@ impl Studio {
         }
         if !commands.is_empty() {
             self.apply(Command::Batch { commands });
-            if self.selection.is_empty() || self.sole_selection().and_then(|id| self.clip(&id)).is_none() {
+            if self.selection.is_empty()
+                || self
+                    .sole_selection()
+                    .and_then(|id| self.clip(&id))
+                    .is_none()
+            {
                 if let Some(first) = text_clips.first() {
                     self.selection = vec![first.id.clone()];
                 }

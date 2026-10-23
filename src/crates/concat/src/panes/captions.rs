@@ -223,8 +223,18 @@ impl CaptionsPane {
                         let look = subject.look;
                         let base = studio.prefs.title_style.clone();
                         let commands: Vec<Command> = match subject.rhythm {
-                            1 => segments_to_dynamic_commands(segments, &subject, look, base.as_ref()),
-                            2 => segments_to_karaoke_commands(segments, &subject, look, base.as_ref()),
+                            1 => segments_to_dynamic_commands(
+                                segments,
+                                &subject,
+                                look,
+                                base.as_ref(),
+                            ),
+                            2 => segments_to_karaoke_commands(
+                                segments,
+                                &subject,
+                                look,
+                                base.as_ref(),
+                            ),
                             _ => segments
                                 .into_iter()
                                 .filter_map(|segment| {
@@ -233,7 +243,8 @@ impl CaptionsPane {
                                         caption_clip(
                                             text,
                                             subject.start + segment.start / subject.speed,
-                                            ((segment.end - segment.start) / subject.speed).max(0.2),
+                                            ((segment.end - segment.start) / subject.speed)
+                                                .max(0.2),
                                             look,
                                             base.as_ref(),
                                         )
@@ -944,8 +955,7 @@ fn segments_to_karaoke_commands(
 
             for (word_idx, &spoken_word) in phrase.iter().enumerate() {
                 let word_weight = spoken_word.chars().count() + 1;
-                let word_dur =
-                    (phrase_dur * (word_weight as f64 / phrase_weight as f64)).max(0.12);
+                let word_dur = (phrase_dur * (word_weight as f64 / phrase_weight as f64)).max(0.12);
                 let highlighted_phrase: String = phrase
                     .iter()
                     .enumerate()

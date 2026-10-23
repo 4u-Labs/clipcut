@@ -169,69 +169,8 @@ pub fn builtin() -> Vec<TextPreset> {
     mod embedded {
         include!(concat!(env!("OUT_DIR"), "/text_presets.rs"));
     }
-    const CAPCUT_PRESETS: &[&str] = &[
-        r##"
-id = "capcut.hormozi"
-name = "🎤 Hormozi Karaokê"
-sample = "KAR"
-order = -10
-offsetY = 0.35
-[style]
-content = "*Hormozi* Karaokê"
-fontWeight = 900
-color = "#FFFFFF"
-strokeWidth = 0.012
-strokeColor = "#000000"
-shadow = true
-"##,
-        r##"
-id = "capcut.tiktok"
-name = "🎤 TikTok Box"
-sample = "BOX"
-order = -9
-offsetY = 0.35
-[style]
-content = "*TikTok* Box"
-fontWeight = 800
-color = "#FFFFFF"
-background = "#000000CC"
-backgroundRadius = 0.018
-backgroundPaddingX = 0.024
-backgroundPaddingY = 0.012
-shadow = false
-"##,
-        r##"
-id = "capcut.yellow"
-name = "🎤 Amarelo Pop"
-sample = "POP"
-order = -8
-offsetY = 0.35
-[style]
-content = "*Amarelo* Pop"
-fontWeight = 900
-color = "#FFDE00"
-strokeWidth = 0.014
-strokeColor = "#000000"
-shadow = true
-"##,
-        r##"
-id = "capcut.neon"
-name = "🎤 Neon Clean"
-sample = "NEON"
-order = -7
-offsetY = 0.35
-[style]
-content = "*Neon* Clean"
-fontWeight = 900
-color = "#00F0FF"
-strokeWidth = 0.012
-strokeColor = "#081020"
-shadow = true
-"##,
-    ];
-    let mut presets: Vec<(i64, TextPreset)> = CAPCUT_PRESETS
+    let mut presets: Vec<(i64, TextPreset)> = embedded::BUILTIN
         .iter()
-        .chain(embedded::BUILTIN.iter())
         .filter_map(|text| parse(text, None))
         .collect();
     presets.sort_by(|(a_order, a), (b_order, b)| {

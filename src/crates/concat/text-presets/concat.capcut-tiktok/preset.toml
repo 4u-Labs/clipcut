@@ -1,0 +1,16 @@
+id = "capcut.tiktok"
+name = "TikTok Box"
+language = "Latin"
+order = 102
+
+[style]
+content = "TikTok Box"
+fontFamily = "Hanken Grotesk"
+fontWeight = 800
+fontSize = 0.08
+color = "#FFFFFF"
+background = "#000000CC"
+backgroundRadius = 0.018
+backgroundPaddingX = 0.024
+backgroundPaddingY = 0.012
+shadow = false

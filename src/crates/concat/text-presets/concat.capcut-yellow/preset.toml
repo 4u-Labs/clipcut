@@ -1,0 +1,14 @@
+id = "capcut.yellow"
+name = "Amarelo Pop"
+language = "Latin"
+order = 103
+
+[style]
+content = "Amarelo Pop"
+fontFamily = "Hanken Grotesk"
+fontWeight = 900
+fontSize = 0.08
+color = "#FFDE00"
+strokeWidth = 0.014
+strokeColor = "#000000"
+shadow = true

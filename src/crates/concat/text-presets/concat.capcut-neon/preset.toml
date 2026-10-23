@@ -1,0 +1,14 @@
+id = "capcut.neon"
+name = "Neon Clean"
+language = "Latin"
+order = 104
+
+[style]
+content = "Neon Clean"
+fontFamily = "Hanken Grotesk"
+fontWeight = 900
+fontSize = 0.08
+color = "#00F0FF"
+strokeWidth = 0.012
+strokeColor = "#081020"
+shadow = true
