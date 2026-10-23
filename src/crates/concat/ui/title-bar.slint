@@ -145,6 +145,7 @@ export component TitleBar inherits Rectangle {
     in property <int> keyboard-menu: -1;
     in property <int> keyboard-token;
     callback open-settings();
+    callback open-copilot();
     /// A view was picked from the add-panel list.
     callback add-pane(kind: PaneKind);
     callback export-clicked();
@@ -267,6 +268,14 @@ export component TitleBar inherits Rectangle {
         // application — so the launch screen has no reason to be shut out of
         // it, and every reason not to be: it is now the only way through to
         // the theme.
+        VerticalLayout {
+            alignment: center;
+            HeaderIconButton {
+                glyph: Glyph.sparkle;
+                clicked => { root.open-copilot(); }
+            }
+        }
+
         VerticalLayout {
             alignment: center;
             HeaderIconButton {

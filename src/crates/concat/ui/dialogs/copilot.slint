@@ -1,0 +1,267 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-FileCopyrightText: 2026 4u-Labs
+
+import { I18n } from "../i18n.slint";
+import { Theme } from "../theme/theme.slint";
+import { Glyph, Icon } from "../icons.slint";
+import { Button, DialogSection, Field, Modal } from "../primitives/modal.slint";
+import { PaneScroll } from "../workspace/pane.slint";
+
+component CopilotChip inherits Rectangle {
+    in property <string> label;
+    in property <bool> active: false;
+    callback clicked();
+
+    height: 28px;
+    border-radius: Theme.r-sm;
+    background: root.active ? Theme.accent : (touch.has-hover ? Theme.field-hover : Theme.field);
+    border-width: 1px;
+    border-color: root.active ? Theme.accent : (touch.has-hover ? Theme.line-strong : Theme.line);
+
+    animate background, border-color { duration: 100ms; }
+
+    HorizontalLayout {
+        padding-left: 10px;
+        padding-right: 10px;
+        alignment: center;
+
+        Text {
+            text: root.label;
+            color: root.active ? Colors.white : (touch.has-hover ? Theme.fg : Theme.fg-muted);
+            font-size: Theme.fs-sm;
+            font-weight: root.active ? Theme.weight-title : Theme.weight-body;
+            vertical-alignment: center;
+        }
+    }
+
+    touch := TouchArea {
+        mouse-cursor: pointer;
+        clicked => { root.clicked(); }
+    }
+}
+
+component MetricChip inherits Rectangle {
+    in property <string> label;
+    in property <string> value;
+
+    height: 44px;
+    border-radius: Theme.r-sm;
+    background: Theme.field;
+    border-width: 1px;
+    border-color: Theme.line;
+    horizontal-stretch: 1;
+
+    VerticalLayout {
+        padding-left: 10px;
+        padding-right: 10px;
+        padding-top: 6px;
+        padding-bottom: 6px;
+        spacing: 2px;
+        alignment: center;
+
+        Text {
+            text: root.label;
+            color: Theme.fg-dim;
+            font-size: Theme.fs-xs;
+            font-weight: Theme.weight-body;
+        }
+
+        Text {
+            text: root.value;
+            color: Theme.accent;
+            font-size: Theme.fs-sm;
+            font-weight: Theme.weight-title;
+            overflow: elide;
+        }
+    }
+}
+
+export component CopilotDialog inherits Modal {
+    in property <bool> open;
+    callback closed();
+    callback open-link(string);
+
+    property <string> query-text: "";
+    property <int> active-chip: 0;
+    property <string> current-title: "✂️ Como Cortar e Dividir Vídeos (Tecla S)";
+    property <string> current-answer: "1. Posicione a agulha de reprodução (playhead) onde deseja o corte.\n2. Pressione a tecla [S] para dividir (Split) o clipe instantaneamente.\n3. Pressione [Q] para aparar do início até a agulha ou [W] para aparar da agulha até o fim.\n4. Para excluir um trecho indesejado mantendo o fluxo contínuo (Ripple Delete), selecione o clipe e pressione [Shift+Delete].";
+
+    title: "Copiloto ClipCut IA";
+    glyph: Glyph.sparkle;
+    note: "IA 100% Local & Treinada";
+    surface-width: 660px;
+    surface-height: 530px;
+
+    closed => { root.closed(); }
+
+    function select_topic(topic: int) {
+        root.active-chip = topic;
+        if topic == 0 {
+            root.current-title = "✂️ Como Cortar e Dividir Vídeos (Tecla S)";
+            root.current-answer = "1. Posicione a agulha de reprodução (playhead) onde deseja o corte.\n2. Pressione a tecla [S] para dividir (Split) o clipe instantaneamente.\n3. Pressione [Q] para aparar do início até a agulha ou [W] para aparar da agulha até o fim.\n4. Para excluir um trecho indesejado mantendo o fluxo contínuo (Ripple Delete), selecione o clipe e pressione [Shift+Delete].";
+        } else if topic == 1 {
+            root.current-title = "💬 Legendas Automáticas & Whisper IA";
+            root.current-answer = "1. Abra a ferramenta de Legendas na bandeja lateral ou pressione [Ctrl+Shift+C].\n2. Escolha o modelo Whisper em Configurações > Transcrição (Tiny, Base ou Small para alta precisão).\n3. O ClipCut processa o áudio 100% OFFLINE no seu hardware sem enviar dados para a internet!\n4. Escolha o ritmo: 'Karaokê' para destacar palavras conforme a voz ou 'Padrão' para frases inteiras.\n5. Você também pode importar ou exportar arquivos .SRT diretamente.";
+        } else if topic == 2 {
+            root.current-title = "📱 Formato Vertical 9:16 (Reels/TikTok)";
+            root.current-answer = "1. Clique em Modificar Projeto para alterar a resolução para 1080x1920 (proporção vertical 9:16).\n2. O ClipCut enquadra e centraliza os elementos automaticamente.\n3. Para preencher vídeos horizontais 16:9 em tela cheia vertical, ative 'Fundo com Desfoque' (Blur) no painel Inspetor.";
+        } else if topic == 3 {
+            root.current-title = "🎯 Zoom Dinâmico e Keyframes";
+            root.current-answer = "1. Selecione o clipe na timeline e abra o painel Inspetor à direita.\n2. Em 'Transformação', clique no losango ao lado de Escala para marcar o primeiro keyframe.\n3. Mova o playhead para a frente e aumente a escala para 115% ou 120% (Punch-In Zoom).\n4. Ajuste as curvas no editor de keyframes para aceleração suave e natural.";
+        } else if topic == 4 {
+            root.current-title = "⚡ Aceleração por GPU & Exportar 4K";
+            root.current-answer = "1. Clique no botão azul 'Exportar' no canto superior direito [Ctrl+E].\n2. O motor gráfico do ClipCut utiliza aceleração por hardware nativa (NVENC, VAAPI/Vulkan, VideoToolbox).\n3. Selecione a resolução desejada: 1080p Full HD, 2K ou 4K Ultra HD a 30fps ou 60fps.\n4. Escolha entre codec H.264 para compartilhar na web ou ProRes para master sem perdas.";
+        } else if topic == 5 {
+            root.current-title = "🤖 Automação & Agentes de IA (Protocolo MCP)";
+            root.current-answer = "1. O ClipCut Studio possui um servidor MCP embutido de fábrica!\n2. Conecte com Claude Desktop, Claude Code, Antigravity ou Cursor iniciando com:\n   concat --mcp (ou clipcut --mcp)\n3. O agente ganha acesso autônomo para fatiar vídeos, criar legendas e renderizar projetos!\n4. Para scripts em Python ou Node.js, ative o socket local em Configurações > Automação.";
+        } else if topic == 6 {
+            root.current-title = "🎨 Estilos e Animações de Legenda";
+            root.current-answer = "1. Estilo Hormozi: Texto branco de alto impacto com palavra falada em amarelo neon.\n2. Estilo Neon Clean: Ciano brilhante e amarelo elétrico com efeito glow.\n3. TikTok Box: Caixa arredondada escura de leitura ultra-rápida.\n4. Animação Pop Elástico: A palavra salta com efeito de mola no momento exato em que é pronunciada.";
+        } else if topic == 7 {
+            root.current-title = "⌨️ Principais Atalhos de Teclado";
+            root.current-answer = "• [Espaço]: Reproduzir / Pausar\n• [S]: Fatiar / Cortar no Playhead (Split)\n• [J] / [K] / [L]: Retroceder / Parar / Avançar em alta velocidade\n• [Q] / [W]: Cortar Início / Cortar Fim até o playhead (Ripple Trim)\n• [Ctrl+Z] / [Ctrl+Y]: Desfazer / Refazer\n• [Ctrl+E]: Exportar Vídeo\n• [Shift+Delete]: Excluir clipe fechando lacuna (Ripple Delete)\n• [Ctrl+,]: Abrir Configurações";
+        }
+    }
+
+    function search_query(q: string) {
+        if q == "" {
+            root.select_topic(0);
+            return;
+        }
+        root.active-chip = -1;
+        root.current-title = "💡 Resposta do Copiloto IA:";
+        root.current-answer = "O ClipCut Studio foi projetado para edição rápida e profissional 100% offline:\n\n• Corte de clipes com a tecla [S] e Ripple Trim com [Q]/[W].\n• Transcrição e legendas Karaokê com Whisper AI local sem internet.\n• Recorte automático de fundo com ONNX Runtime.\n• Automação total com agentes de IA via protocolo MCP ('concat --mcp').\n• Exportação com aceleração de hardware GPU em até 4K 60fps!\n\nSelecione qualquer um dos chips acima para instruções passo a passo detalhadas.";
+    }
+
+    VerticalLayout {
+        padding: 16px;
+        spacing: 12px;
+
+        // ── 1. Diagnóstico da Linha do Tempo & Sistema ──────────────────────────
+        HorizontalLayout {
+            spacing: 8px;
+            MetricChip { label: "Mídia"; value: "Vídeo 4K / Multi"; }
+            MetricChip { label: "Legendas IA"; value: "Whisper.cpp Local"; }
+            MetricChip { label: "Renderizador"; value: "GPU WGPU / Skia"; }
+            MetricChip { label: "Automação"; value: "Servidor MCP Ativo"; }
+        }
+
+        // ── Dica Proativa ───────────────────────────────────────────────────────
+        Rectangle {
+            height: 32px;
+            border-radius: Theme.r-sm;
+            background: Theme.field;
+            border-width: 1px;
+            border-color: Theme.accent;
+
+            HorizontalLayout {
+                padding-left: 10px;
+                padding-right: 10px;
+                spacing: 8px;
+                alignment: center;
+
+                Icon {
+                    glyph: Glyph.sparkle;
+                    size: 13px;
+                    tint: Theme.accent;
+                }
+
+                Text {
+                    text: "Dica: Use [S] para dividir clipes no playhead. [Espaço] para reproduzir e [F1] para abrir o Copiloto.";
+                    color: Theme.fg;
+                    font-size: Theme.fs-sm;
+                    vertical-alignment: center;
+                    overflow: elide;
+                }
+            }
+        }
+
+        // ── 2. Chips de Tópicos e Dúvidas Rápidas ──────────────────────────────
+        VerticalLayout {
+            spacing: 6px;
+
+            HorizontalLayout {
+                spacing: 6px;
+                CopilotChip { label: "✂️ Cortes (S)"; active: root.active-chip == 0; clicked => { root.select_topic(0); } }
+                CopilotChip { label: "💬 Legendas Whisper"; active: root.active-chip == 1; clicked => { root.select_topic(1); } }
+                CopilotChip { label: "📱 Formato 9:16"; active: root.active-chip == 2; clicked => { root.select_topic(2); } }
+                CopilotChip { label: "🎯 Zoom & Keyframes"; active: root.active-chip == 3; clicked => { root.select_topic(3); } }
+            }
+
+            HorizontalLayout {
+                spacing: 6px;
+                CopilotChip { label: "⚡ Aceleração GPU"; active: root.active-chip == 4; clicked => { root.select_topic(4); } }
+                CopilotChip { label: "🤖 Agentes MCP"; active: root.active-chip == 5; clicked => { root.select_topic(5); } }
+                CopilotChip { label: "🎨 Estilos Legenda"; active: root.active-chip == 6; clicked => { root.select_topic(6); } }
+                CopilotChip { label: "⌨️ Atalhos"; active: root.active-chip == 7; clicked => { root.select_topic(7); } }
+            }
+        }
+
+        // ── 3. Painel de Resposta Formatada do Copiloto ─────────────────────────
+        answer-box := Rectangle {
+            vertical-stretch: 1;
+            border-radius: Theme.r;
+            background: Theme.page;
+            border-width: 1px;
+            border-color: Theme.line-strong;
+
+            VerticalLayout {
+                padding: 14px;
+                spacing: 8px;
+
+                HorizontalLayout {
+                    spacing: 8px;
+                    alignment: start;
+
+                    Icon {
+                        glyph: Glyph.sparkle;
+                        size: 14px;
+                        tint: Theme.accent;
+                    }
+
+                    Text {
+                        text: root.current-title;
+                        color: Theme.fg;
+                        font-size: Theme.fs-lg;
+                        font-weight: Theme.weight-title;
+                    }
+                }
+
+                Rectangle {
+                    height: 1px;
+                    background: Theme.line;
+                }
+
+                Text {
+                    text: root.current-answer;
+                    color: Theme.fg-muted;
+                    font-size: Theme.fs-sm;
+                    wrap: word-wrap;
+                    vertical-stretch: 1;
+                }
+            }
+        }
+
+        // ── 4. Barra de Pergunta Livre ──────────────────────────────────────────
+        HorizontalLayout {
+            spacing: 8px;
+
+            Field {
+                placeholder: "Digite sua dúvida (ex: como cortar vídeo, atalhos, exportar em 4k)...";
+                value: root.query-text;
+                edited(t) => {
+                    root.query-text = t;
+                }
+            }
+
+            Button {
+                label: "Perguntar";
+                glyph: Glyph.sparkle;
+                primary: true;
+                clicked => {
+                    root.search_query(root.query-text);
+                }
+            }
+        }
+    }
+}

@@ -80,7 +80,7 @@ pub fn system_facts() -> Vec<(String, String)> {
     let mut facts = vec![
         (
             t("sysinfo.application"),
-            format!("Concat {}", env!("CARGO_PKG_VERSION")),
+            format!("ClipCut Studio {}", env!("CARGO_PKG_VERSION")),
         ),
         (
             t("sysinfo.build"),
@@ -100,7 +100,7 @@ pub fn system_facts() -> Vec<(String, String)> {
         ),
         (
             t("sysinfo.engine"),
-            format!("concat-engine · FFmpeg {}", concat_media::linked_version()),
+            format!("clipcut-engine · FFmpeg {}", concat_media::linked_version()),
         ),
         (t("sysinfo.operatingSystem"), os_description()),
         (

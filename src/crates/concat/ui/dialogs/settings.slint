@@ -578,7 +578,57 @@ component ShortcutRow inherits Rectangle {
                 }
             }
         }
+    }
+}
 
+component SocialCard inherits Rectangle {
+    in property <string> title;
+    in property <Glyph> glyph: Glyph.arrow-up-right;
+
+    callback clicked();
+
+    height: 32px;
+    horizontal-stretch: 1;
+    border-radius: Theme.r-sm;
+    background: touch.has-hover ? Theme.field-hover : Theme.field;
+    border-width: 1px;
+    border-color: touch.has-hover ? Theme.line-strong : Theme.line;
+
+    animate background { duration: 100ms; }
+    animate border-color { duration: 100ms; }
+
+    HorizontalLayout {
+        padding-left: 10px;
+        padding-right: 8px;
+        spacing: 6px;
+        alignment: center;
+
+        Icon {
+            glyph: root.glyph;
+            size: 13px;
+            tint: touch.has-hover ? Theme.accent : Theme.fg-muted;
+        }
+
+        Text {
+            horizontal-stretch: 1;
+            text: root.title;
+            color: touch.has-hover ? Theme.fg : Theme.fg-muted;
+            font-size: Theme.fs-sm;
+            font-weight: touch.has-hover ? Theme.weight-title : Theme.weight-body;
+            vertical-alignment: center;
+            overflow: elide;
+        }
+
+        Icon {
+            glyph: Glyph.arrow-up-right;
+            size: 11px;
+            tint: touch.has-hover ? Theme.accent : Theme.fg-dim;
+        }
+    }
+
+    touch := TouchArea {
+        mouse-cursor: pointer;
+        clicked => { root.clicked(); }
     }
 }
 
@@ -599,6 +649,7 @@ export component SettingsDialog inherits Modal {
     in property <string> system-report;
 
     callback page-changed(index: int);
+    callback open-link(string);
     /// Opens the folder this run's log is being written into.
     callback show-log();
     callback language-changed(index: int);
@@ -683,7 +734,6 @@ export component SettingsDialog inherits Modal {
         {label: I18n.t("common.transcriber"), glyph: Glyph.waveform, page: 2, desk: false},
         {label: I18n.t("common.speech"), glyph: Glyph.music, page: 3, desk: false},
         {label: I18n.t("settings.automation"), glyph: Glyph.lock, page: 4, desk: true},
-        {label: I18n.t("settings.version"), glyph: Glyph.tag, page: 6, desk: true},
         {label: I18n.t("settings.about"), glyph: Glyph.sparkle, page: 5, desk: false},
     ];
 
@@ -1437,122 +1487,105 @@ export component SettingsDialog inherits Modal {
                 }
             }
 
-            // The Version page: which release this is, whether a newer one
-            // is out, and any release from 0.2.5 on put in this one's place.
-            // A desk's affair, like the Automation page: a phone's store does
-            // its updating.
-            if root.data.tab == 6 && !root.phone: VerticalLayout {
+            if root.data.tab == 5: VerticalLayout {
+                spacing: 10px;
+
+                // The name and description of ClipCut Studio by 4u-Labs
                 DialogSection {
                     ruled: false;
                     first: true;
-                    title: I18n.t("settings.version");
+                    title: I18n.t("settings.about");
 
                     VerticalLayout {
-                        spacing: 8px;
+                        spacing: 4px;
 
                         Text {
-                            text: I18n.t1("settings.concat", "\{root.data.version}");
+                            text: "ClipCut Studio " + root.data.version;
                             color: Theme.fg;
                             font-size: Theme.fs-lg;
                             font-weight: Theme.weight-title;
                         }
 
                         Text {
-                            text: root.data.update-status;
+                            text: "Editor e Transcritor de Vídeo Rápido, Inteligente e com IA por 4u-Labs";
+                            color: Theme.accent;
+                            font-size: Theme.fs;
+                            font-weight: Theme.weight-title;
+                        }
+
+                        Text {
+                            text: "Software livre de edição multimodal e legendagem com Whisper AI local e aceleração por GPU. Desenvolvido para máxima privacidade e agilidade.";
                             color: Theme.fg-muted;
                             font-size: Theme.fs-sm;
                             wrap: word-wrap;
-                        }
-
-                        HorizontalLayout {
-                            alignment: start;
-
-                            Button {
-                                label: root.data.checking
-                                    ? I18n.t("settings.checkingForUpdates")
-                                    : I18n.t("settings.checkForUpdates");
-                                enabled: !root.data.checking;
-                                clicked => { root.check-updates(); }
-                            }
                         }
                     }
                 }
 
                 DialogSection {
-
                     ruled: false;
-                    title: I18n.t("settings.switchVersion");
-                    hint: I18n.t("settings.switchVersionNote");
+                    title: "Comunidade & Redes Sociais";
+                    hint: "Conecte-se conosco, confira atualizações, tutoriais e nossos outros aplicativos:";
 
                     VerticalLayout {
                         spacing: 8px;
 
                         HorizontalLayout {
                             spacing: 8px;
-
-                            Select {
-                                horizontal-stretch: 1;
-                                options: root.versions;
-                                details: root.version-details;
-                                current: root.data.version-choice;
-                                placeholder: I18n.t("settings.noReleasesYet");
-                                enabled: root.versions.length > 0 && !root.data.installing;
-                                changed(index) => { root.version-chosen(index); }
+                            SocialCard {
+                                title: "GitHub (4u-Labs)";
+                                glyph: Glyph.tag;
+                                clicked => { root.open-link("https://github.com/4u-Labs"); }
                             }
-
-                            if !root.data.installing: Button {
-                                label: I18n.t("settings.install");
-                                glyph: Glyph.import;
-                                primary: true;
-                                enabled: root.data.can-install;
-                                clicked => { root.install-version(); }
+                            SocialCard {
+                                title: "Blog Dev";
+                                glyph: Glyph.book;
+                                clicked => { root.open-link("https://4u-labs.github.io/"); }
                             }
-
-                            if root.data.installing: Button {
-                                label: I18n.t("common.cancel");
-                                glyph: Glyph.close;
-                                ghost: true;
-                                clicked => { root.install-cancel(); }
+                            SocialCard {
+                                title: "AlternativeTo";
+                                glyph: Glyph.sparkle;
+                                clicked => { root.open-link("https://alternativeto.net/user/4u-ia-br/added/"); }
                             }
                         }
 
-                        if root.data.install-note != "": Text {
-                            text: root.data.install-note;
-                            color: Theme.fg-muted;
-                            font-size: Theme.fs-sm;
-                            wrap: word-wrap;
-                        }
-
-                        if root.data.installing: VerticalLayout {
-                            spacing: 6px;
-
-                            Progress { value: root.data.install-progress; }
-
-                            Text {
-                                text: root.data.install-transferred;
-                                color: Theme.fg-muted;
-                                font-family: Theme.font-technical;
-                                font-size: Theme.fs-sm;
+                        HorizontalLayout {
+                            spacing: 8px;
+                            SocialCard {
+                                title: "YouTube (@fbr4g4)";
+                                glyph: Glyph.circle-play;
+                                clicked => { root.open-link("https://www.youtube.com/@fbr4g4"); }
+                            }
+                            SocialCard {
+                                title: "Instagram (@fbr4g4)";
+                                glyph: Glyph.image;
+                                clicked => { root.open-link("https://www.instagram.com/fbr4g4/"); }
+                            }
+                            SocialCard {
+                                title: "Facebook (@fbr4g4)";
+                                glyph: Glyph.shapes;
+                                clicked => { root.open-link("https://www.facebook.com/fbr4g4/"); }
                             }
                         }
-                    }
-                }
-            }
 
-            if root.data.tab == 5: VerticalLayout {
-                // The name and the build, and nothing under them: the engine
-                // and the FFmpeg it links are rows of the table below, where
-                // a report reads them from.
-                DialogSection {
-                    ruled: false;
-                    first: true;
-                    title: I18n.t("settings.about");
-
-                    Text {
-                        text: I18n.t1("settings.concat", "\{root.data.version}");
-                        color: Theme.fg;
-                        font-size: Theme.fs-lg;
-                        font-weight: Theme.weight-title;
+                        HorizontalLayout {
+                            spacing: 8px;
+                            SocialCard {
+                                title: "X / Twitter (@fbr4g4)";
+                                glyph: Glyph.text-mark;
+                                clicked => { root.open-link("https://x.com/fbr4g4"); }
+                            }
+                            SocialCard {
+                                title: "LinkedIn (fbr4g4)";
+                                glyph: Glyph.align-left;
+                                clicked => { root.open-link("https://www.linkedin.com/in/fbr4g4/"); }
+                            }
+                            SocialCard {
+                                title: "Apps & Suporte";
+                                glyph: Glyph.help;
+                                clicked => { root.open-link("https://4u.ia.br/suporte.html"); }
+                            }
+                        }
                     }
                 }
 

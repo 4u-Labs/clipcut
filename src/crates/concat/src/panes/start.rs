@@ -101,15 +101,22 @@ pub const REPOSITORY: &str = "https://github.com/4u-Labs/clipcut";
 /// repository - or the repository's, and None for a name nobody sends.
 /// "shortcuts" is not here: it opens Settings, not a page.
 pub fn link(name: &str) -> Option<String> {
+    if name.starts_with("http://") || name.starts_with("https://") {
+        return Some(name.to_owned());
+    }
     Some(match name {
         "guides" => format!("{SITE}/guides/"),
         "first-edit" => format!("{SITE}/guides/first-edit/"),
         "report" => format!("{SITE}/guides/report-a-problem/"),
-        "github" => REPOSITORY.to_owned(),
-        // The invite the README carries.
-        "discord" => "https://discord.gg/DVuPfpXfqP".to_owned(),
-        // The notes for the release this build is, under the tag the
-        // release workflow pushes.
+        "github" => "https://github.com/4u-Labs".to_owned(),
+        "blog" => "https://4u-labs.github.io/".to_owned(),
+        "alternativeto" => "https://alternativeto.net/user/4u-ia-br/added/".to_owned(),
+        "youtube" => "https://www.youtube.com/@fbr4g4".to_owned(),
+        "instagram" => "https://www.instagram.com/fbr4g4/".to_owned(),
+        "facebook" => "https://www.facebook.com/fbr4g4/".to_owned(),
+        "twitter" | "x" => "https://x.com/fbr4g4".to_owned(),
+        "linkedin" => "https://www.linkedin.com/in/fbr4g4/".to_owned(),
+        "support" | "discord" => "https://4u.ia.br/suporte.html".to_owned(),
         "release-notes" => format!("{REPOSITORY}/releases/tag/v{}", env!("CARGO_PKG_VERSION")),
         _ => return None,
     })

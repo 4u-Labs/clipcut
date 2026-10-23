@@ -27,6 +27,7 @@ import { ModelData, SettingsData, SettingsDialog, SystemFactData } from "dialogs
 import { ProjectDialog, ProjectSheetData } from "dialogs/project.slint";
 import { RelinkDialog, RelinkData, MissingMediaItem } from "dialogs/relink.slint";
 import { ConfirmData, ConfirmDialog } from "dialogs/confirm.slint";
+import { CopilotDialog } from "dialogs/copilot.slint";
 import { CaptionsDialog, CaptionsSheetData } from "dialogs/captions.slint";
 import { SpeechDialog, SpeechSheetData } from "dialogs/speech.slint";
 import { AvatarData } from "primitives/avatar.slint";
@@ -68,7 +69,7 @@ export {
     SelectedClipData, SelectedTransitionData, StageGuideData, StageItemData, TextAlignment, TimelineTabData,
     TimelineTool, TrackData, TrackSize, MenuItemData, MenuRow, ExportData, ExportPhase, ModelData, SettingsData,
     ChipOption, RecentProjectData, StartData, SystemFactData, ToastData, ProjectSheetData,
-    CaptionsSheetData, SpeechSheetData, VoiceoverData, SoundCardData, Sounds, VoiceCardData,
+    CaptionsSheetData, SpeechSheetData, VoiceoverData, SoundCardData, Sounds, VoiceCardData, CopilotDialog,
 }
 
 export component App inherits Window {
@@ -121,9 +122,10 @@ export component App inherits Window {
             keys.focus();
         }
     }
+    in-out property <bool> copilot-open: false;
     property <bool> sheet-open: root.export.open || root.settings.open
         || root.project-sheet.open || root.captions.open || root.speech.open
-        || root.start.composing;
+        || root.copilot-open || root.start.composing;
     changed sheet-open => {
         if (!root.sheet-open) {
             keys.focus();
@@ -512,6 +514,7 @@ export component App inherits Window {
             // quit the app, a running export with it.
             if (event.text == Key.Escape || event.text == Key.Back) {
                 if (root.confirm.open) { root.confirm-dismissed(); return accept; }
+                if (root.copilot-open) { root.copilot-open = false; return accept; }
                 if (root.relink.open) { root.relink-dismiss(); return accept; }
                 if (root.project-sheet.open) { root.project-closed(); return accept; }
                 if (root.settings.open) { root.settings-closed(); return accept; }
@@ -535,6 +538,10 @@ export component App inherits Window {
                     if (!root.sheets-fill || !root.captions.running) { root.captions-closed(); }
                     return accept;
                 }
+            }
+            if (event.text == Key.F1) {
+                root.copilot-open = !root.copilot-open;
+                return accept;
             }
             // Back with nothing on top: the editor saves and goes back to
             // the launch screen, as a phone editor's Back returns to its
@@ -596,6 +603,7 @@ export component App inherits Window {
                 minimize => { root.titlebar-minimize(); }
                 close => { root.titlebar-close(); }
                 open-settings => { root.open-settings(); }
+                open-copilot => { root.copilot-open = true; }
                 add-pane(kind) => { Editor.dock-add(kind); }
                 export-clicked => { root.export-clicked(); }
             }
@@ -894,6 +902,7 @@ export component App inherits Window {
         model-download(id) => { root.model-download(id); }
         model-cancel(id) => { root.model-cancel(id); }
         model-remove(id) => { root.model-remove(id); }
+        open-link(url) => { root.start-link(url); }
     }
 
     in property <RelinkData> relink;
@@ -952,6 +961,21 @@ export component App inherits Window {
         data: root.confirm;
         confirmed => { root.confirm-accepted(); }
         dismissed => { root.confirm-dismissed(); }
+    }
+
+    CopilotDialog {
+        fill: root.sheets-fill;
+        inset-top: root.safe-area-insets.top;
+        inset-bottom: root.safe-area-insets.bottom;
+        inset-left: root.safe-area-insets.left;
+        inset-right: root.safe-area-insets.right;
+        x: 0;
+        y: 0;
+        width: root.width;
+        height: root.height;
+        open: root.copilot-open;
+        closed => { root.copilot-open = false; }
+        open-link(url) => { root.start-link(url); }
     }
 
 
