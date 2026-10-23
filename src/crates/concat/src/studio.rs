@@ -6213,7 +6213,7 @@ impl Studio {
     pub fn set_vertical_9_16(&mut self) {
         self.flush_commit();
         let timeline = self.timeline().clone();
-        let mut video = timeline.video.clone();
+        let mut video = timeline.video;
         video.width = 1080;
         video.height = 1920;
         let mut commands = vec![Command::SetTimelineVideo {

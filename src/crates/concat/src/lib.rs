@@ -908,13 +908,14 @@ fn start(project: Option<std::path::PathBuf>, smoke: bool) -> Result<(), slint::
         state.place_at_playhead(&format!("media:{id}"));
     }));
     editor.on_library_add_text(on_window!(|state, preset: SharedString| {
+        #[allow(clippy::collapsible_if)]
         if let Some(capcut_kind) = preset.as_str().strip_prefix("capcut.") {
-            if state
+            let has_text_clips = state
                 .timeline()
                 .clips
                 .iter()
-                .any(|c| c.kind == concat_project::model::ClipKind::Text)
-            {
+                .any(|c| c.kind == concat_project::model::ClipKind::Text);
+            if has_text_clips {
                 state.apply_caption_preset(capcut_kind);
                 return;
             }
