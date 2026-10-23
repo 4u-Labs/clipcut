@@ -89,6 +89,24 @@
             </button>
           </div>
 
+          <!-- Guia de Escolha: Online PWA vs Versões Nativas -->
+          <div class="lp-edition-guide">
+            <div class="edition-guide-item pwa-guide">
+              <span class="guide-badge" data-pt="🌐 Opção Online (PWA)" data-en="🌐 Online WebApp (PWA)">🌐 Opção Online (PWA)</span>
+              <p data-pt="Mais simples e direto no navegador: visa edições rápidas para qualquer pessoa, mesmo sem nenhum conhecimento prévio em edição de vídeo."
+                 data-en="Simpler and directly in the browser: aimed at quick, effortless edits for anyone, even without prior video editing knowledge.">
+                Mais simples e direto no navegador: visa edições rápidas para qualquer pessoa, mesmo sem nenhum conhecimento prévio em edição de vídeo.
+              </p>
+            </div>
+            <div class="edition-guide-item desktop-guide">
+              <span class="guide-badge" data-pt="💻📱 Demais Versões (Desktop/Mobile)" data-en="💻📱 Other Versions (Desktop/Mobile)">💻📱 Demais Versões (Desktop/Mobile)</span>
+              <p data-pt="Para quem quer tirar o máximo proveito do ClipCut: a versão completa e gratuita do CapCut com motor nativo Rust, aceleração por GPU, IA Whisper offline e Copilot integrado."
+                 data-en="For those who want to get the most out of ClipCut: the complete and free CapCut alternative with native Rust engine, GPU acceleration, offline Whisper AI and built-in Copilot.">
+                Para quem quer tirar o máximo proveito do ClipCut: a versão completa e gratuita do CapCut com motor nativo Rust, aceleração por GPU, IA Whisper offline e Copilot integrado.
+              </p>
+            </div>
+          </div>
+
           <div class="lp-hero-chips">
             <span>✓ <b data-pt="Zero Marca D'água" data-en="Zero Watermarks">Zero Marca D'água</b></span>
             <span>✓ <b data-pt="Whisper.cpp Offline" data-en="Offline Whisper.cpp">Whisper.cpp Offline</b></span>
@@ -279,9 +297,9 @@
               data-en="Ready to edit on your Computer, Tablet or Phone?">
             Pronto para editar no seu Computador, Tablet ou Celular?
           </h2>
-          <p data-pt="Escolha a versão ideal para o seu dispositivo: WebApp PWA instalável (Tablets/iPad/Chromebook) ou instaladores nativos para Linux, Windows, macOS, Android e iOS."
-             data-en="Choose the ideal version for your device: installable PWA WebApp (Tablets/iPad/Chromebook) or native installers for Linux, Windows, macOS, Android and iOS.">
-            Escolha a versão ideal para o seu dispositivo: <strong>WebApp PWA instalável</strong> (Tablets/iPad/Chromebook) ou instaladores nativos para <strong>Linux, Windows, macOS, Android e iOS</strong>.
+          <p data-pt="A opção online PWA é mais simples e visa edições rápidas para qualquer pessoa que não tenha conhecimento em edição de vídeo. Já as demais versões instaláveis (Linux, Windows, macOS, Android e iOS) são para quem quer tirar o máximo proveito do ClipCut: a versão completa e gratuita do CapCut com motor nativo Rust, aceleração por hardware e Whisper IA offline."
+             data-en="The online PWA option is simpler and aimed at quick edits for anyone with no video editing experience. The other installable versions (Linux, Windows, macOS, Android, and iOS) are for those looking to get the most out of ClipCut: the complete and free CapCut alternative with native Rust engine, hardware acceleration, and offline Whisper AI.">
+            A <strong>opção online PWA</strong> é mais simples e visa edições rápidas para qualquer pessoa que não tenha conhecimento em edição de vídeo. Já as <strong>demais versões instaláveis</strong> (Linux, Windows, macOS, Android e iOS) são para quem quer tirar o máximo proveito do ClipCut: a <strong>versão completa e gratuita do CapCut</strong> com motor nativo Rust, aceleração por hardware e Whisper IA offline.
           </p>
         </div>
         <button type="button" class="btn-hero-primary js-open-download-modal">
@@ -327,14 +345,14 @@
       <div class="modal-header">
         <div>
           <span class="gate-badge" data-pt="Download & Instalação Oficial" data-en="Official Download & Installation">Download &amp; Instalação Oficial</span>
-          <h3 class="modal-title-lg" data-pt="Escolha a versão do ClipCut para o seu dispositivo"
-              data-en="Choose the ClipCut version for your device">
-            Escolha a versão do ClipCut para o seu dispositivo
+          <h3 class="modal-title-lg" data-pt="Escolha a versão ideal para o seu objetivo"
+              data-en="Choose the ideal version for your needs">
+            Escolha a versão ideal para o seu objetivo
           </h3>
           <p class="modal-sub"
-             data-pt="Instale como WebApp PWA (ideal para Tablets/iPad) ou baixe o instalador nativo para o seu sistema operacional."
-             data-en="Install as a PWA WebApp (ideal for Tablets/iPad) or download the native installer for your operating system.">
-            Instale como WebApp PWA (ideal para Tablets/iPad) ou baixe o instalador nativo para o seu sistema operacional.
+             data-pt="A opção online PWA é mais simples e voltada a edições rápidas para iniciantes. Já as versões nativas oferecem o máximo desempenho com a versão completa e gratuita do CapCut."
+             data-en="The online PWA option is simpler and aimed at quick edits for beginners. Native versions deliver maximum performance with the full and free CapCut alternative.">
+            A opção online PWA é mais simples e voltada a edições rápidas para iniciantes. Já as versões nativas oferecem o máximo desempenho com a versão completa e gratuita do CapCut.
           </p>
         </div>
         <button id="btn-close-download" class="modal-close" type="button">✕</button>
@@ -343,13 +361,14 @@
       <!-- Opção 1 em Destaque: WebApp PWA (Tablets / iPad / Chromebook / Navegador) -->
       <div class="pwa-install-box">
         <div class="pwa-install-info">
+          <div class="edition-type-pill pwa-pill" data-pt="⚡ Opção Mais Simples · Edições Rápidas no Navegador" data-en="⚡ Simpler Option · Quick Browser Edits">⚡ Opção Mais Simples · Edições Rápidas no Navegador</div>
           <h3>
-            🌐 <span data-pt="WebApp Instalável (PWA)" data-en="Installable WebApp (PWA)">WebApp Instalável (PWA)</span>
-            <span class="tag-recommended" data-pt="Tablets · iPad · Chromebook · Web" data-en="Tablets · iPad · Chromebook · Web">Tablets · iPad · Chromebook · Web</span>
+            🌐 <span data-pt="Estúdio Web Online (PWA)" data-en="Online Web Studio (PWA)">Estúdio Web Online (PWA)</span>
+            <span class="tag-recommended" data-pt="Sem instalação · Navegador · Tablets" data-en="No install · Browser · Tablets">Sem instalação · Navegador · Tablets</span>
           </h3>
-          <p data-pt="Instala em 1 segundo na tela inicial, abre em janela dedicada em tela cheia e funciona 100% offline."
-             data-en="Installs in 1 second on your home screen, opens in a dedicated fullscreen window and works 100% offline.">
-            Instala em 1 segundo na tela inicial, abre em janela dedicada em tela cheia e funciona 100% offline.
+          <p data-pt="A opção online PWA é mais simples e visa edições rápidas para qualquer pessoa que não tenha conhecimento em edição de vídeo: corte silêncios, adicione legendas automáticas e exporte seus vídeos sem precisar instalar nada."
+             data-en="The online PWA option is simpler and aims at quick edits for anyone without video editing experience: cut silences, add auto-captions, and export your videos without installing anything.">
+            A <strong>opção online PWA</strong> é mais simples e visa <strong>edições rápidas para qualquer pessoa que não tenha conhecimento em edição de vídeo</strong>: corte silêncios, adicione legendas automáticas e exporte seus vídeos sem precisar instalar nada.
           </p>
           <p id="ios-safari-hint" class="ios-hint hidden"
              data-pt="No iPad / iPhone (Safari): toque em Compartilhar (⬆️) e escolha 'Adicionar à Tela de Início'."
@@ -369,10 +388,16 @@
 
       <!-- Grade das Plataformas Nativas -->
       <div class="platforms-section">
-        <h4 data-pt="Instaladores Nativos (Motor Rust + FFmpeg + Whisper IA Offline):"
-            data-en="Native Installers (Rust + FFmpeg + Offline Whisper AI Engine):">
-          Instaladores Nativos (Motor Rust + FFmpeg + Whisper IA Offline):
+        <div class="edition-type-pill desktop-pill" data-pt="🚀 Versão Completa & Máximo Desempenho" data-en="🚀 Full Version & Maximum Performance">🚀 Versão Completa &amp; Máximo Desempenho</div>
+        <h4 data-pt="Instaladores Nativos — A versão completa e gratuita do CapCut:"
+            data-en="Native Installers — The complete and free CapCut alternative:">
+          Instaladores Nativos — A versão completa e gratuita do CapCut:
         </h4>
+        <p class="platforms-intro"
+           data-pt="As demais versões são para quem quer tirar o máximo proveito do ClipCut: a versão completa e gratuita do CapCut com motor nativo Rust, aceleração por GPU, IA Whisper offline ilimitada e Copilot integrado."
+           data-en="The other versions are for those who want to get the most out of ClipCut: the complete and free CapCut alternative with native Rust engine, GPU acceleration, unlimited offline Whisper AI, and built-in Copilot.">
+          As demais versões são para quem quer <strong>tirar o máximo proveito do ClipCut</strong>: a <strong>versão completa e gratuita do CapCut</strong> com motor nativo Rust, aceleração por GPU, IA Whisper offline ilimitada e Copilot integrado.
+        </p>
         <div class="platforms-grid">
           <a href="https://github.com/4u-Labs/clipcut/releases/download/v0.2.8/Concat-0.2.8-linux-x86_64.deb" class="platform-card" data-os="linux" download>
             <span class="plat-icon">🐧</span>
