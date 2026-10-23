@@ -77,8 +77,6 @@ component MetricChip inherits Rectangle {
 }
 
 export component CopilotDialog inherits Modal {
-    in property <bool> open;
-    callback closed();
     callback open-link(string);
 
     property <string> query-text: "";
@@ -91,8 +89,6 @@ export component CopilotDialog inherits Modal {
     note: "IA 100% Local & Treinada";
     surface-width: 660px;
     surface-height: 530px;
-
-    closed => { root.closed(); }
 
     function select_topic(topic: int) {
         root.active-chip = topic;
