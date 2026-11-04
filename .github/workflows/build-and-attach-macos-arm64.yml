@@ -80,7 +80,10 @@ jobs:
           lines.append(f"{manifest_sha}  manifest.json")
           sums_path.write_text("\n".join(sorted(lines)) + "\n", encoding="utf-8")
           PY
-          (cd bundles && sha256sum --check SHA256SUMS)
+          # This job downloads only the new DMG plus the two release metadata
+          # files. Verify the assets it has locally; the other release assets
+          # are not present in this job's workspace.
+          (cd bundles && grep -E "Concat-$version-macos-arm64\\.dmg| manifest\\.json$" SHA256SUMS | sha256sum --check)
           gh release upload "$TAG" bundles/"Concat-$version-macos-arm64.dmg" bundles/manifest.json bundles/SHA256SUMS --clobber
 
       - name: Verify published Apple Silicon asset
