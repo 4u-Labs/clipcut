@@ -46,10 +46,23 @@ on:
   push:
     branches: ["**"]
   workflow_dispatch:
+    inputs:
+      ref:
+        description: The ref to build, when it is not this branch
+        type: string
+        default: ""
+      target:
+        description: Optional single matrix target, e.g. macos-arm64
+        type: string
+        default: ""
   workflow_call:
     inputs:
       ref:
         description: The ref to build, when it is not the one this runs on
+        type: string
+        default: ""
+      target:
+        description: Optional single matrix target, e.g. macos-arm64
         type: string
         default: ""
     secrets:
@@ -112,6 +125,7 @@ env:
 jobs:
   app:
     name: ${{ matrix.platform }}-${{ matrix.arch }}
+    if: ${{ inputs.target == '' || format('{0}-{1}', matrix.platform, matrix.arch) == inputs.target }}
     strategy:
       fail-fast: false
       matrix:

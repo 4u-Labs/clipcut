@@ -1,0 +1,93 @@
+name: Build and attach macOS Apple Silicon
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing ClipCut release tag
+        required: true
+        type: string
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  build:
+    uses: ./.github/workflows/build-app.yml
+    with:
+      ref: ${{ inputs.tag }}
+      target: macos-arm64
+    secrets: inherit
+
+  attach:
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.tag }}
+          fetch-depth: 0
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: Concat-macos-arm64
+          path: bundles
+
+      - name: Update manifest and checksums
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          version=${TAG#v}
+          gh release view "$TAG" --json isDraft --jq '.isDraft == false' | grep -qx true
+          gh release download "$TAG" --pattern manifest.json --pattern SHA256SUMS --dir bundles
+          python3 - "$version" "$TAG" bundles <<'PY'
+          import hashlib
+          import json
+          import pathlib
+          import sys
+
+          version, tag, directory = sys.argv[1:]
+          root = pathlib.Path(directory)
+          filename = f"Concat-{version}-macos-arm64.dmg"
+          package = root / filename
+          if not package.is_file():
+              raise SystemExit("Apple Silicon DMG is missing")
+          digest = hashlib.sha256()
+          with package.open("rb") as stream:
+              for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+                  digest.update(chunk)
+          sha = digest.hexdigest()
+          manifest_path = root / "manifest.json"
+          manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+          manifest["binaries"].setdefault("macos", {})["arm64"] = {
+              "dmg": {
+                  "file": filename,
+                  "url": f"https://github.com/4u-Labs/clipcut/releases/download/{tag}/{filename}",
+                  "bytes": package.stat().st_size,
+                  "sha256": sha,
+              }
+          }
+          manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+          manifest_sha = hashlib.sha256(manifest_path.read_bytes()).hexdigest()
+          sums_path = root / "SHA256SUMS"
+          lines = [line for line in sums_path.read_text(encoding="utf-8").splitlines() if line.split()[-1] not in {filename, "manifest.json"}]
+          lines.append(f"{sha}  {filename}")
+          lines.append(f"{manifest_sha}  manifest.json")
+          sums_path.write_text("\n".join(sorted(lines)) + "\n", encoding="utf-8")
+          PY
+          (cd bundles && sha256sum --check SHA256SUMS)
+          gh release upload "$TAG" bundles/"Concat-$version-macos-arm64.dmg" bundles/manifest.json bundles/SHA256SUMS --clobber
+
+      - name: Verify published Apple Silicon asset
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          version=${TAG#v}
+          gh release view "$TAG" --json isDraft,assets --jq --arg file "Concat-$version-macos-arm64.dmg" '.isDraft == false and ([.assets[].name] | index($file) != null)' | grep -qx true
